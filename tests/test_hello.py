@@ -1,6 +1,6 @@
 import pytest
 
-from src.mcp_agent.hello import hello_fn, a_hello_fn
+from src.mcp_agents.hello import hello_fn, a_hello_fn
 
 
 def test_hello():

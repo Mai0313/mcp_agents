@@ -50,8 +50,8 @@ This template is designed to be cloned and customized for new Python projects. D
 
 When users clone this project, they can quickly customize it by performing global replacements:
 
-- **Replace `mcp_agent`** → Replace with their actual project name (snake_case format)
-- **Replace `MCPAgent`** → Replace with their project title (PascalCase format)
+- **Replace `mcp_agents`** → Replace with their actual project name (snake_case format)
+- **Replace `MCPAgents`** → Replace with their project title (PascalCase format)
 
 This allows users to instantly personalize the entire project structure, package names, imports, and documentation while keeping all the CI/CD infrastructure intact.
 

@@ -5,18 +5,18 @@
 [![python](https://img.shields.io/badge/-Python_3.10_%7C_3.11_%7C_3.12-blue?logo=python&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![uv](https://img.shields.io/badge/-uv_dependency_management-2C5F2D?logo=python&logoColor=white)](https://docs.astral.sh/uv/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![tests](https://github.com/Mai0313/mcp_agent/actions/workflows/test.yml/badge.svg)](https://github.com/Mai0313/mcp_agent/actions/workflows/test.yml)
-[![code-quality](https://github.com/Mai0313/mcp_agent/actions/workflows/code-quality-check.yml/badge.svg)](https://github.com/Mai0313/mcp_agent/actions/workflows/code-quality-check.yml)
-[![codecov](https://codecov.io/gh/Mai0313/mcp_agent/branch/master/graph/badge.svg)](https://codecov.io/gh/Mai0313/mcp_agent)
-[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/Mai0313/mcp_agent/tree/master?tab=License-1-ov-file)
-[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Mai0313/mcp_agent/pulls)
-[![contributors](https://img.shields.io/github/contributors/Mai0313/mcp_agent.svg)](https://github.com/Mai0313/mcp_agent/graphs/contributors)
+[![tests](https://github.com/Mai0313/mcp_agents/actions/workflows/test.yml/badge.svg)](https://github.com/Mai0313/mcp_agents/actions/workflows/test.yml)
+[![code-quality](https://github.com/Mai0313/mcp_agents/actions/workflows/code-quality-check.yml/badge.svg)](https://github.com/Mai0313/mcp_agents/actions/workflows/code-quality-check.yml)
+[![codecov](https://codecov.io/gh/Mai0313/mcp_agents/branch/master/graph/badge.svg)](https://codecov.io/gh/Mai0313/mcp_agents)
+[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/Mai0313/mcp_agents/tree/master?tab=License-1-ov-file)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Mai0313/mcp_agents/pulls)
+[![contributors](https://img.shields.io/github/contributors/Mai0313/mcp_agents.svg)](https://github.com/Mai0313/mcp_agents/graphs/contributors)
 
 </center>
 
 🚀 **一個完整的 Python 專案模板，幫助開發者快速啟動專案，內含完整的 CI/CD 流水線和現代化工具**
 
-點擊 [<kbd>使用此模板</kbd>](https://github.com/Mai0313/mcp_agent/generate) 來建立新的儲存庫，或使用我們的初始化腳本進行個人化設定。
+點擊 [<kbd>使用此模板</kbd>](https://github.com/Mai0313/mcp_agents/generate) 來建立新的儲存庫，或使用我們的初始化腳本進行個人化設定。
 
 **其他語言版本**: [English](README.md) | [中文](README_cn.md)
 
@@ -68,7 +68,7 @@
 
 ### 選項 1: 使用 GitHub 模板
 
-1. 點擊 [<kbd>使用此模板</kbd>](https://github.com/Mai0313/mcp_agent/generate)
+1. 點擊 [<kbd>使用此模板</kbd>](https://github.com/Mai0313/mcp_agents/generate)
 2. 配置您的新儲存庫
 3. 複製並開始開發
 
@@ -97,8 +97,8 @@
 ### 選項 4: 快速自訂（推薦）
 
 1. 複製此儲存庫
-2. 全局替換 `mcp_agent` 為您的專案名稱（snake_case 格式）
-3. 全局替換 `MCPAgent` 為您的專案標題（PascalCase 格式）
+2. 全局替換 `mcp_agents` 為您的專案名稱（snake_case 格式）
+3. 全局替換 `MCPAgents` 為您的專案標題（PascalCase 格式）
 4. 執行初始設定：
     ```bash
     make uv-install && uv sync && make format
@@ -115,7 +115,7 @@
 ├── docs/                   # MkDocs 文檔
 ├── scripts/                # 自動化腳本
 ├── src/
-│   └── mcp_agent/      # 主要套件
+│   └── mcp_agents/      # 主要套件
 ├── tests/                  # 測試套件
 ├── pyproject.toml          # 專案配置
 ├── Makefile               # 開發命令
@@ -168,16 +168,16 @@ uv add <package> --dev  # 添加開發依賴
 
 本模板設計為可透過簡單的全局替換快速自訂：
 
-1. **替換套件名稱**: 將所有 `mcp_agent` 替換為您的專案名稱（建議使用 snake_case）
-2. **替換專案標題**: 將所有 `MCPAgent` 替換為您的專案標題（建議使用 PascalCase）
+1. **替換套件名稱**: 將所有 `mcp_agents` 替換為您的專案名稱（建議使用 snake_case）
+2. **替換專案標題**: 將所有 `MCPAgents` 替換為您的專案標題（建議使用 PascalCase）
 3. **更新中繼資料**: 修改 `pyproject.toml` 中的作者、描述等資訊
 
 範例：
 
 ```bash
 # 如果您的專案叫做 "awesome_project"
-find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agent/awesome_project/g'
-find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgent/AwesomeProject/g'
+find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agents/awesome_project/g'
+find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgents/AwesomeProject/g'
 ```
 
 ## 🤝 貢獻
@@ -190,11 +190,11 @@ find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/
 
 ## 📖 文檔
 
-詳細文檔請訪問：[https://mai0313.github.io/mcp_agent/](https://mai0313.github.io/mcp_agent/)
+詳細文檔請訪問：[https://mai0313.github.io/mcp_agents/](https://mai0313.github.io/mcp_agents/)
 
 ## 👥 貢獻者
 
-[![Contributors](https://contrib.rocks/image?repo=Mai0313/mcp_agent)](https://github.com/Mai0313/mcp_agent/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=Mai0313/mcp_agents)](https://github.com/Mai0313/mcp_agents/graphs/contributors)
 
 Made with [contrib.rocks](https://contrib.rocks)
 

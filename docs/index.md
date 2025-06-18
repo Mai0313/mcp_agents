@@ -3,18 +3,18 @@
 [![python](https://img.shields.io/badge/-Python_3.10_%7C_3.11_%7C_3.12-blue?logo=python&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![uv](https://img.shields.io/badge/-uv_dependency_management-2C5F2D?logo=python&logoColor=white)](https://docs.astral.sh/uv/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![tests](https://github.com/Mai0313/mcp_agent/actions/workflows/test.yml/badge.svg)](https://github.com/Mai0313/mcp_agent/actions/workflows/test.yml)
-[![code-quality](https://github.com/Mai0313/mcp_agent/actions/workflows/code-quality-check.yml/badge.svg)](https://github.com/Mai0313/mcp_agent/actions/workflows/code-quality-check.yml)
-[![codecov](https://codecov.io/gh/Mai0313/mcp_agent/branch/master/graph/badge.svg)](https://codecov.io/gh/Mai0313/mcp_agent)
-[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/Mai0313/mcp_agent/tree/master?tab=License-1-ov-file)
-[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Mai0313/mcp_agent/pulls)
-[![contributors](https://img.shields.io/github/contributors/Mai0313/mcp_agent.svg)](https://github.com/Mai0313/mcp_agent/graphs/contributors)
+[![tests](https://github.com/Mai0313/mcp_agents/actions/workflows/test.yml/badge.svg)](https://github.com/Mai0313/mcp_agents/actions/workflows/test.yml)
+[![code-quality](https://github.com/Mai0313/mcp_agents/actions/workflows/code-quality-check.yml/badge.svg)](https://github.com/Mai0313/mcp_agents/actions/workflows/code-quality-check.yml)
+[![codecov](https://codecov.io/gh/Mai0313/mcp_agents/branch/master/graph/badge.svg)](https://codecov.io/gh/Mai0313/mcp_agents)
+[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/Mai0313/mcp_agents/tree/master?tab=License-1-ov-file)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Mai0313/mcp_agents/pulls)
+[![contributors](https://img.shields.io/github/contributors/Mai0313/mcp_agents.svg)](https://github.com/Mai0313/mcp_agents/graphs/contributors)
 
 🚀 **A comprehensive Python project template designed to help developers quickly bootstrap new projects with complete CI/CD pipelines, modern tooling, and best practices.**
 
 The template includes everything needed to start a professional Python project without spending time on infrastructure setup.
 
-**Other Languages**: [English](https://github.com/Mai0313/mcp_agent/blob/master/README.md) | [中文](https://github.com/Mai0313/mcp_agent/blob/master/README_cn.md)
+**Other Languages**: [English](https://github.com/Mai0313/mcp_agents/blob/master/README.md) | [中文](https://github.com/Mai0313/mcp_agents/blob/master/README_cn.md)
 
 ## Why Use This Template?
 
@@ -63,7 +63,7 @@ This template eliminates the time-consuming setup of project infrastructure, all
 
 === "GitHub Template"
 
-    1. Click [**Use this template**](https://github.com/Mai0313/mcp_agent/generate)
+    1. Click [**Use this template**](https://github.com/Mai0313/mcp_agents/generate)
     2. Configure your new repository
     3. Clone and start developing
 
@@ -71,8 +71,8 @@ This template eliminates the time-consuming setup of project infrastructure, all
 
     ```bash
     # Clone the template
-    git clone https://github.com/Mai0313/mcp_agent.git
-    cd mcp_agent
+    git clone https://github.com/Mai0313/mcp_agents.git
+    cd mcp_agents
 
     # Run the initialization script
     go run scripts/initpyrepo.go
@@ -84,8 +84,8 @@ This template eliminates the time-consuming setup of project infrastructure, all
 
     ```bash
     # Clone the repository
-    git clone https://github.com/Mai0313/mcp_agent.git
-    cd mcp_agent
+    git clone https://github.com/Mai0313/mcp_agents.git
+    cd mcp_agents
 
     # Install uv if not already installed
     make uv-install
@@ -101,14 +101,14 @@ This template eliminates the time-consuming setup of project infrastructure, all
 
     ```bash
     # Clone the repository
-    git clone https://github.com/Mai0313/mcp_agent.git
-    cd mcp_agent
+    git clone https://github.com/Mai0313/mcp_agents.git
+    cd mcp_agents
 
     # Replace with your project name (snake_case)
-    find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agent/your_project_name/g'
+    find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agents/your_project_name/g'
 
     # Replace with your project title (PascalCase)
-    find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgent/YourProjectTitle/g'
+    find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgents/YourProjectTitle/g'
 
     # Install and setup
     make uv-install && uv sync && make format
@@ -156,7 +156,7 @@ The template follows Python packaging best practices with a clean, organized str
 │   ├── initpyrepo.go    # Project initialization
 │   └── gen_docs.py      # Documentation generation
 ├── src/
-│   └── mcp_agent/   # Main package
+│   └── mcp_agents/   # Main package
 ├── tests/               # Test suite
 ├── pyproject.toml       # Project configuration
 ├── .pre-commit-config.yaml
@@ -180,16 +180,16 @@ The template includes comprehensive configuration for:
 
 This template is designed for quick customization through simple global replacements:
 
-1. **Replace package name**: Change all instances of `mcp_agent` to your project name (recommended: snake_case)
-2. **Replace project title**: Change all instances of `MCPAgent` to your project title (recommended: PascalCase)
+1. **Replace package name**: Change all instances of `mcp_agents` to your project name (recommended: snake_case)
+2. **Replace project title**: Change all instances of `MCPAgents` to your project title (recommended: PascalCase)
 3. **Update metadata**: Modify author, description, and other details in `pyproject.toml`
 
 **Example commands:**
 
 ```bash
 # If your project is called "awesome_project"
-find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agent/awesome_project/g'
-find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgent/AwesomeProject/g'
+find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agents/awesome_project/g'
+find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgents/AwesomeProject/g'
 ```
 
 ### Dependency Management
@@ -268,10 +268,10 @@ See our [Contributing Guide](contributing/) for details.
 
 ## 👥 Contributors
 
-[![Contributors](https://contrib.rocks/image?repo=Mai0313/mcp_agent)](https://github.com/Mai0313/mcp_agent/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=Mai0313/mcp_agents)](https://github.com/Mai0313/mcp_agents/graphs/contributors)
 
 Made with [contrib.rocks](https://contrib.rocks)
 
 ---
 
-**Ready to start your next Python project?** [Use this template](https://github.com/Mai0313/mcp_agent/generate) and focus on building amazing applications! 🚀
+**Ready to start your next Python project?** [Use this template](https://github.com/Mai0313/mcp_agents/generate) and focus on building amazing applications! 🚀
