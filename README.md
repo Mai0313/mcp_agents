@@ -115,7 +115,7 @@ This project demonstrates how to create agents using the Model Context Protocol 
     ```python
     # Use swarm mode for complex tasks
     result = asyncio.run(
-        agent.a_run_swarm("Analyze the project requirements and create documentation in Confluence")
+        agent.a_run("Analyze the project requirements and create documentation in Confluence")
     )
     ```
 
@@ -198,19 +198,19 @@ The system supports multiple MCP servers:
 - **Gitea (gitea-mcp)**: Git repository management
 - **GitHub (SSE-based)**: GitHub integration via Server-Sent Events
 
-## 🚀 Execution Modes
+## 🚀 Execution Mode
 
-### Simple Mode (`a_run`)
+### Multi-Agent Workflow (`a_run` / `run`)
 
-- **Single Agent**: Direct tool access without complex routing
-- **Fast Execution**: Minimal overhead for straightforward tasks
-- **Best For**: Simple Confluence/Jira operations, direct tool execution
-
-### Swarm Mode (`a_run_swarm`)
-
-- **Multi-Agent**: Specialized agents with intelligent routing
-- **Advanced Coordination**: Complex task decomposition and collaboration
-- **Best For**: Complex workflows, multi-system integration, planning tasks
+- **Sequential Flow**: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- **Plan-Driven Execution**: Tasks are first planned, reviewed, approved, then routed for execution
+- **Specialized Tool Access**: Only mcp_agent has direct MCP toolkit registration
+- **Clear Separation of Concerns**:
+    - **Code Agent**: Writes and designs code
+    - **Execution Agent**: Executes and tests code
+    - **MCP Agent**: Handles all external tool operations (Jira, Confluence, Git, etc.)
+- **Cross-Agent Collaboration**: Agents can hand off tasks to each other based on specialization
+- **Best For**: All types of tasks - from simple operations to complex multi-step workflows
 
 ## 🏗️ Architecture
 

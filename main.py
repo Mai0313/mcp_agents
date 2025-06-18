@@ -13,14 +13,17 @@ from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from autogen.io.run_response import Message
 from autogen.agentchat.contrib.swarm_agent import (
-    AfterWork,
     OnCondition,
-    AfterWorkOption,
     register_hand_off,
     initiate_swarm_chat,
 )
 
-from src.prompt import get_manager_system_message, generate_dynamic_system_message
+from src.prompt import (
+    get_planner_system_message,
+    get_mcp_agent_system_message,
+    get_code_agent_system_message,
+    get_execution_agent_system_message,
+)
 
 
 class SSEServerParameters(BaseModel):
@@ -119,117 +122,97 @@ class MCPAgent(BaseModel):
         tools_result = await session.list_tools()
         tools = tools_result.tools
 
-        # Manager Agent - Routes tasks to appropriate specialists
-        manager_message = await get_manager_system_message(tools=tools)
-        manager = AssistantAgent(
-            name="manager",
-            system_message=manager_message,
+        # 1. Planner Agent - Creates execution plans and assigns tasks
+        # Gets high-level overview of available tools and agent capabilities
+        planner_message = await get_planner_system_message(tools=tools)
+        planner = AssistantAgent(
+            name="planner",
+            system_message=planner_message,
             llm_config=self.llm_config,
             human_input_mode="NEVER",
         )
 
-        agent_message = await generate_dynamic_system_message(tools=tools)
-        planning_agent = AssistantAgent(
-            name="planning_agent",
-            system_message=agent_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-        documentation_agent = AssistantAgent(
-            name="documentation_agent",
-            system_message=agent_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
+        # 2. Code Agent - Handles software development tasks (NO MCP tool details)
+        code_agent_message = await get_code_agent_system_message()
         code_agent = AssistantAgent(
             name="code_agent",
-            system_message=agent_message,
+            system_message=code_agent_message,
             llm_config=self.llm_config,
             human_input_mode="NEVER",
         )
+
+        # 3. Execution Agent - Handles code execution (NO MCP tool details)
+        execution_agent_message = await get_execution_agent_system_message()
         execution_agent = AssistantAgent(
             name="execution_agent",
-            system_message=agent_message,
+            system_message=execution_agent_message,
             llm_config=self.llm_config,
             human_input_mode="NEVER",
         )
 
-        # Manager routes to specialists based on task type
+        # 4. MCP Agent - Handles MCP tool operations (GETS detailed tool info)
+        mcp_agent_message = await get_mcp_agent_system_message(tools=tools)  # Full tool details
+        mcp_agent = AssistantAgent(
+            name="mcp_agent",
+            system_message=mcp_agent_message,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+        )
+
+        # Simplified Flow: User -> Planner -> Direct assignment to specialist agent
+
+        # Planner assigns tasks directly to appropriate agents
         register_hand_off(
-            agent=manager,
+            agent=planner,
             hand_to=[
-                OnCondition(
-                    target=documentation_agent,
-                    condition="The task involves Jira tickets, Confluence pages, or documentation management",
-                ),
-                OnCondition(
-                    target=code_agent,
-                    condition="The task involves coding, software development, or Git repository operations",
-                ),
-                AfterWork(agent=AfterWorkOption.TERMINATE),  # Terminate if no specific routing
+                OnCondition(target=code_agent, condition="code_agent"),
+                OnCondition(target=mcp_agent, condition="mcp_agent"),
+                OnCondition(target=execution_agent, condition="execution_agent"),
             ],
         )
 
-        # Documentation agent executes documentation tasks directly
-        register_hand_off(
-            agent=documentation_agent,
-            hand_to=[
-                AfterWork(
-                    agent=AfterWorkOption.TERMINATE
-                )  # Terminate after completing documentation tasks
-            ],
-        )
-
-        # Code agent handles development tasks directly
+        # Code Agent can collaborate with other agents when needed
         register_hand_off(
             agent=code_agent,
             hand_to=[
-                AfterWork(agent=AfterWorkOption.TERMINATE)  # Terminate after completing code tasks
+                OnCondition(target=execution_agent, condition="execute code"),
+                OnCondition(target=mcp_agent, condition="use tools"),
             ],
         )
 
-        # Planning agent is simplified - mainly for complex routing if needed
+        # Execution Agent can request tool operations from MCP agent
         register_hand_off(
-            agent=planning_agent,
-            hand_to=[
-                AfterWork(agent=AfterWorkOption.TERMINATE)  # Terminate after planning
-            ],
+            agent=execution_agent, hand_to=[OnCondition(target=mcp_agent, condition="need tools")]
         )
 
-        # Execution agent handles tool operations, reports back
-        register_hand_off(
-            agent=execution_agent,
-            hand_to=[
-                AfterWork(agent=AfterWorkOption.TERMINATE)  # Terminate after tool execution
-            ],
-        )
+        # MCP Agent handles all tool operations (final execution)
+        # No hand-off needed - this is typically the final agent
 
-        # Register MCP toolkit with documentation agent (so it can use tools directly)
+        # Register MCP toolkit ONLY with mcp_agent
         toolkit = await create_toolkit(session=session)
-        toolkit.register_for_execution(documentation_agent)
-        toolkit.register_for_execution(code_agent)
-        toolkit.register_for_execution(execution_agent)
+        toolkit.register_for_execution(mcp_agent)
 
-        # Create agent list for swarm chat
-        all_agents = [manager, planning_agent, documentation_agent, code_agent, execution_agent]
+        # Create simplified agent list for swarm chat
+        all_agents = [planner, code_agent, execution_agent, mcp_agent]
 
-        history, *_ = initiate_swarm_chat(
-            initial_agent=manager,
+        # Start the workflow with planner
+        history = initiate_swarm_chat(
+            initial_agent=planner,
             agents=all_agents,
             user_agent=user,
-            messages=message,
-            after_work=AfterWork(AfterWorkOption.TERMINATE),
+            messages=[{"role": "user", "content": message}],
         )
         return history
 
-    async def a_run(self, message: str) -> Message:
+    async def a_run(self, message: str) -> ChatResult:
+        """Execute multi-agent swarm workflow with planner -> manager -> router -> (code/execution) agents"""
         async with self._session_context() as session:
             return await self._create_toolkit_and_run(message=message, session=session)
 
     def list_tools(self) -> ListToolsResult:
         return asyncio.run(self.a_list_tools())
 
-    def run(self, message: str) -> Message:
+    def run(self, message: str) -> ChatResult:
         return asyncio.run(self.a_run(message=message))
 
 
@@ -284,4 +267,6 @@ if __name__ == "__main__":
 
     mcp_agent = MCPAgent(model="aide-gpt-4o", params=jira_params)
     # print(mcp_agent.list_tools())
+
+    # Use the multi-agent workflow
     asyncio.run(mcp_agent.a_run(message=message))

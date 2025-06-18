@@ -44,50 +44,64 @@ The project focuses on practical MCP agent implementation with support for multi
 
 ### Specialized Agent Architecture
 
-The system employs a multi-agent architecture with specialized roles:
+The system employs a **sequential multi-agent workflow** with specialized roles:
+
+#### **Planner Agent**
+
+- **Role**: Strategic planning and task decomposition specialist
+- **Responsibilities**: Analyzes user requests and creates detailed execution plans
+- **Workflow Position**: First agent in the chain (receives user input)
+- **Output**: Structured execution plan with steps, resources, and expected outcomes
+- **System Message**: Uses planner-specific system message from `get_planner_system_message()`
 
 #### **Manager Agent**
 
-- **Role**: Task analysis and routing coordinator
-- **Responsibilities**: Analyzes user requests and routes to appropriate specialist agents
-- **Routing Logic**: Simplified routing between documentation_agent and code_agent only
+- **Role**: Plan review and approval coordinator
+- **Responsibilities**: Reviews planner's execution plans and makes approval decisions
+- **Workflow Position**: Second agent in the chain (reviews planner output)
+- **Decision Logic**: Approves good plans, requests revisions, or rejects unfeasible requests
 - **System Message**: Uses manager-specific system message from `get_manager_system_message()`
 
-#### **Planning Agent**
+#### **Router Agent**
 
-- **Role**: Strategic planning and task decomposition (currently implemented but not actively used in routing)
-- **Responsibilities**: Available for complex task decomposition but not integrated in current routing logic
-- **System Message**: Uses the same dynamic system message as other agents
-
-#### **Documentation Agent**
-
-- **Role**: Documentation and content management specialist
-- **Expertise**: Jira tickets, Confluence pages, content creation/editing
-- **Tools**: Has access to all available MCP tools through toolkit registration
-- **System Message**: Auto-generated based on real-time tool discovery
+- **Role**: Execution path determination specialist
+- **Responsibilities**: Routes approved plans to appropriate execution agents
+- **Workflow Position**: Third agent in the chain (routes approved plans)
+- **Routing Logic**: Routes to code_agent, mcp_agent, or execution_agent based on task nature
+- **System Message**: Uses router-specific system message from `get_router_system_message()`
 
 #### **Code Agent**
 
-- **Role**: Software development and technical operations specialist
+- **Role**: Software development and technical implementation specialist
 - **Expertise**: Code writing, development workflows, technical implementation
-- **Tools**: Has access to all available MCP tools through toolkit registration
-- **System Message**: Auto-generated based on real-time tool discovery
+- **Tools**: **NO direct MCP access** - focuses on code creation and technical design
+- **Collaboration**: Can hand off to execution_agent for code execution or mcp_agent for tool operations
+- **System Message**: Uses code-specific system message from `get_code_agent_system_message()`
 
 #### **Execution Agent**
 
-- **Role**: Direct MCP tool execution specialist (currently implemented but simplified)
-- **Expertise**: Tool execution and operation handling
-- **Tools**: Has access to all available MCP tools through toolkit registration
-- **System Message**: Auto-generated based on real-time tool discovery
+- **Role**: Code execution and testing specialist
+- **Expertise**: Running code, executing scripts, testing programs, performance monitoring
+- **Tools**: **NO direct MCP access** - focuses on code execution and testing
+- **Responsibilities**: Executes code written by code_agent, runs tests, handles runtime debugging
+- **System Message**: Uses execution-specific system message from `get_execution_agent_system_message()`
+
+#### **MCP Agent**
+
+- **Role**: **EXCLUSIVE** MCP tool execution specialist
+- **Expertise**: Direct MCP tool execution, API operations, external system interactions
+- **Tools**: **ONLY agent with MCP toolkit registration** - has exclusive access to all MCP tools
+- **Responsibilities**: Executes all MCP tool operations (Jira, Confluence, Git, etc.), data manipulation, external system interactions
+- **System Message**: Uses MCP-specific system message from `get_mcp_agent_system_message()`
 
 ### Key Methods
 
 - `a_list_tools()`: Lists available MCP tools asynchronously
-- `a_run(message)`: Executes simplified single-agent workflow using `_create_toolkit_and_run_simple()`
-- `a_run_swarm(message)`: Executes multi-agent swarm workflow using `_create_toolkit_and_run()`
+- `a_run(message)`: Executes multi-agent swarm workflow using `_create_toolkit_and_run()`
+- `run(message)`: Synchronous version of `a_run()`
 - `_session_context()`: Context manager for MCP session handling
-- `_create_toolkit_and_run()`: Creates specialized agent swarm with manager-based routing
-- `_create_toolkit_and_run_simple()`: Simplified single-agent execution for direct tool usage
+- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates six-agent sequential workflow: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- `_create_toolkit_and_run_simple()`: Simplified single-agent execution for direct tool usage (legacy/testing)
 - `_create_toolkit_and_run_v1()`: Legacy method (currently not used)
 
 ### Prompt Management System
@@ -95,9 +109,14 @@ The system employs a multi-agent architecture with specialized roles:
 The system features a **centralized prompt management** architecture in `src/prompt.py`:
 
 - **Centralized Prompts**: All system messages are managed in `src/prompt.py` for consistency and maintainability
-- **Dynamic Generation**: Two main functions for generating prompts:
-    - `generate_dynamic_system_message(tools)`: Creates tool-aware system messages for specialist agents
-    - `get_manager_system_message(tools)`: Creates manager-specific routing messages
+- **Specialized Prompt Functions**: Seven main functions for generating role-specific prompts:
+    - `get_planner_system_message(tools)`: Creates strategic planning prompts
+    - `get_manager_system_message(tools)`: Creates plan review and approval prompts
+    - `get_router_system_message(tools)`: Creates task routing prompts
+    - `get_code_agent_system_message(tools)`: Creates software development prompts
+    - `get_execution_agent_system_message(tools)`: Creates code execution prompts
+    - `get_mcp_agent_system_message(tools)`: Creates MCP tool operation prompts
+    - `generate_dynamic_system_message(tools)`: Fallback for general tool-aware prompts
 - **Generic & Adaptable**: Prompts are tool-agnostic and work with any MCP server configuration
 - **Clean Format**: Professional, focused prompts without unnecessary decorations
 - **Tool Categorization**: Automatically categorizes tools by prefix patterns for better organization
@@ -116,12 +135,14 @@ This ensures that agents always have up-to-date information about available tool
 
 ### Hand-off Strategy
 
-The system implements intelligent agent hand-offs using AutoGen's swarm capabilities with simplified routing:
+The system implements intelligent agent hand-offs using AutoGen's swarm capabilities with **sequential workflow**:
 
-- **Manager-based routing**: Manager agent analyzes tasks and routes to documentation_agent or code_agent
-- **Direct execution**: Specialist agents (documentation and code) execute tasks directly with MCP toolkit access
+- **Sequential Planning Flow**: User → Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- **Plan-Driven Execution**: Tasks are first planned, reviewed, approved, then routed for execution
+- **Specialized Tool Access**: Only mcp_agent has direct MCP toolkit registration
+- **Cross-Agent Collaboration**: Code agents can hand off to execution agents for code execution or mcp_agent for tool operations
 - **Termination-based completion**: All agents use AfterWork(AfterWorkOption.TERMINATE) for clean task completion
-- **Simple coordination**: Current implementation focuses on clear task segregation rather than complex agent collaboration
+- **Intelligent Routing**: Router agent makes informed decisions based on task characteristics
 
 ### Supported Connection Types
 
@@ -206,25 +227,24 @@ The project supports sophisticated multi-agent workflows for:
 - **mkdocs.yml**: Documentation site configuration
 - **docker-compose.yaml**: Container orchestration for development and deployment
 
-## Usage Modes
+## Usage
 
-The system supports two execution modes:
+The system uses a **multi-agent sequential workflow** for all tasks:
 
-### 🔧 Simple Mode (`a_run`)
+### 🌊 Multi-Agent Workflow (`a_run` / `run`)
 
-- **Single agent**: Direct tool access without complex routing
-- **Fast execution**: Minimal overhead for straightforward tasks
-- **Dynamic adaptation**: Automatically discovers and uses available tools
-- **Best for**: Simple Confluence/Jira operations, direct tool execution
-- **Implementation**: Uses `_create_toolkit_and_run_simple()` with a single MCP agent
+- **Six-agent sequential flow**: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- **Plan-driven execution**: Tasks are first planned, reviewed, approved, then routed for execution
+- **Specialized tool access**: Only mcp_agent has direct MCP toolkit registration
+- **Cross-agent collaboration**: Code agents can hand off to execution agents for code execution or mcp_agent for tool operations
+- **Best for**: All types of tasks - from simple operations to complex multi-step workflows
+- **Implementation**: Uses `_create_toolkit_and_run()` with planner-based sequential workflow
 
-### 🌊 Swarm Mode (`a_run_swarm`)
+### 🔧 Legacy Simple Mode (Available but not default)
 
-- **Multi-agent**: Specialized agents with intelligent routing
-- **Advanced coordination**: Complex task decomposition and collaboration
-- **Fallback handling**: Robust error recovery and alternative approaches
-- **Best for**: Complex workflows, multi-system integration, planning tasks
-- **Implementation**: Uses `_create_toolkit_and_run()` with manager-based routing system
+- **Single agent**: Direct tool access via `_create_toolkit_and_run_simple()`
+- **Fast execution**: Minimal overhead for testing or debugging
+- **Note**: This mode is available for legacy compatibility but not used by default
 
 ## Implementation Details
 
@@ -237,22 +257,49 @@ The current implementation includes:
 - **LLM configuration**: Azure OpenAI with specific API endpoints and headers
 - **Session management**: Async context manager for MCP connections
 - **Tool discovery**: Real-time tool listing and categorization
-- **Agent specialization**: Five distinct agent types with specific roles
+- **Agent specialization**: Six distinct agent types with specific roles
 
 ### Current Routing Logic
 
 ```python
-# Manager routes only to documentation_agent or code_agent
+# Sequential workflow: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+
+# Planner creates plan and hands to manager
+register_hand_off(
+    agent=planner,
+    hand_to=[
+        OnCondition(target=manager, condition="Plan is complete and ready for review"),
+        AfterWork(agent=AfterWorkOption.TERMINATE),
+    ],
+)
+
+# Manager reviews plan and routes to router if approved
 register_hand_off(
     agent=manager,
     hand_to=[
         OnCondition(
-            target=documentation_agent,
-            condition="The task involves Jira tickets, Confluence pages, or documentation management",
+            target=router_agent, condition="Plan is approved and ready for execution routing"
         ),
+        OnCondition(target=planner, condition="Plan needs revision or improvement"),
+        AfterWork(agent=AfterWorkOption.TERMINATE),
+    ],
+)
+
+# Router determines execution path: Code Agent, MCP Agent, or Execution Agent
+register_hand_off(
+    agent=router_agent,
+    hand_to=[
         OnCondition(
             target=code_agent,
-            condition="The task involves coding, software development, or Git repository operations",
+            condition="Task requires software development, coding, or technical implementation",
+        ),
+        OnCondition(
+            target=mcp_agent,
+            condition="Task requires MCP tool operations, data manipulation, or external system interactions",
+        ),
+        OnCondition(
+            target=execution_agent,
+            condition="Task requires code execution, testing, or running programs",
         ),
         AfterWork(agent=AfterWorkOption.TERMINATE),
     ],
