@@ -1,6 +1,6 @@
 <center>
 
-# Python 專案模板
+# MCP Agents
 
 [![python](https://img.shields.io/badge/-Python_3.10_%7C_3.11_%7C_3.12-blue?logo=python&logoColor=white)](https://github.com/pre-commit/pre-commit)
 [![uv](https://img.shields.io/badge/-uv_dependency_management-2C5F2D?logo=python&logoColor=white)](https://docs.astral.sh/uv/)
@@ -14,120 +14,158 @@
 
 </center>
 
-🚀 **一個完整的 Python 專案模板，幫助開發者快速啟動專案，內含完整的 CI/CD 流水線和現代化工具**
+🤖 **一個基於模型上下文協議（MCP）的智能代理實現，通過 LLM 驱動的代理實現智能自動化**
 
-點擊 [<kbd>使用此模板</kbd>](https://github.com/Mai0313/mcp_agents/generate) 來建立新的儲存庫，或使用我們的初始化腳本進行個人化設定。
+本專案展示如何使用模型上下文協議創建代理，將大型語言模型與外部工具和服務連接，實現與 Jira、Confluence、Git 儲存庫等企業系統的自動化交互，以及其他 MCP 兼容服務。
 
 **其他語言版本**: [English](README.md) | [中文](README_cn.md)
 
 ## ✨ 功能特色
 
-### 🏗️ **現代化專案結構**
+### 🤖 **多代理 MCP 實現**
 
-- **src/ 佈局**: 遵循 Python 封裝最佳實踐
-- **uv 依賴管理**: 快速、可靠的現代化依賴解析
-- **多版本支援**: Python 3.10、3.11 和 3.12
-- **型別提示**: 完整的型別註解支援與驗證
+- **MCPAgent 類**: MCP 連接和代理交互的中央調度器
+- **多協議支援**: STDIO 和 SSE（Server-Sent Events）連接
+- **AutoGen 整合**: 使用 Microsoft 的 AutoGen 進行多代理對話
+- **異步/等待模式**: 完全異步實現，確保高效操作
 
-### 🔧 **開發環境**
+### � **MCP 服務器整合**
 
-- **VS Code Dev Container**: 完整配置，包含 zsh、oh-my-zsh 和 powerlevel10k 主題
-- **Docker 支援**: 開發和生產環境的多階段 Dockerfile
-- **Pre-commit hooks**: 使用 ruff 自動化程式碼格式化和檢查
-- **本地開發**: 使用 Make 命令輕鬆設定
+- **Atlassian 整合**: 通過 `mcp-atlassian` 進行 Jira 和 Confluence 操作
+- **Context7**: 通過 `@upstash/context7-mcp` 存取文檔和知識庫
+- **Codex**: 通過 `codex mcp` 處理程式碼相關操作
+- **Gitea**: 通過 `gitea-mcp` 進行 Git 儲存庫管理
+- **GitHub**: 通過 Server-Sent Events 進行整合
 
-### 🧪 **測試與品質保證**
+### 🎯 **智能代理系統**
 
-- **pytest 框架**: 全面的測試與覆蓋率報告
-- **平行執行**: 使用 pytest-xdist 加速測試執行
-- **程式碼覆蓋率**: HTML 和 XML 報告，可配置閾值
-- **品質門檻**: 每次提交都自動進行程式碼品質檢查
+- **管理代理**: 任務分析和路由協調器
+- **文檔代理**: 專門處理 Jira 票券和 Confluence 頁面
+- **程式碼代理**: 軟體開發和技術操作
+- **規劃代理**: 策略規劃和任務分解
+- **執行代理**: 直接 MCP 工具執行專家
 
-### 🚀 **完整 CI/CD 流水線**
+### �️ **開發環境**
 
-- **多版本測試**: 跨 Python 版本的自動化測試
-- **程式碼品質檢查**: ruff 檢查和格式化驗證
-- **文檔部署**: 自動 GitHub Pages 部署
-- **發布自動化**: 語義化版本控制和發布草稿
-- **自動標籤**: 智能 PR 分類
-
-### 📚 **文檔系統**
-
-- **MkDocs Material**: 美觀且響應式的文檔
-- **自動生成**: 從程式碼和筆記本自動生成文檔的腳本
-- **API 文檔**: 自動 API 參考生成
-- **部落格支援**: 內建專案更新部落格功能
-
-### 🤖 **自動化腳本**
-
-- **專案初始化**: `scripts/initpyrepo.go` 用於建立個人化專案
-- **文檔生成**: `scripts/gen_docs.py` 用於自動生成文檔
-- **Makefile 命令**: 常見開發任務自動化
+- **uv 依賴管理**: 快速、可靠的 Python 套件管理
+- **型別提示**: 使用 Pydantic 模型的完整型別註解支援
+- **測試框架**: pytest 與覆蓋率報告
+- **程式碼品質**: ruff 檢查和格式化
+- **文檔**: MkDocs 自動生成
 
 ## 🚀 快速開始
 
-### 選項 1: 使用 GitHub 模板
+### 前置需求
 
-1. 點擊 [<kbd>使用此模板</kbd>](https://github.com/Mai0313/mcp_agents/generate)
-2. 配置您的新儲存庫
-3. 複製並開始開發
+- Python 3.10+
+- uv（Python 套件管理器）
+- Azure OpenAI 或兼容 LLM 服務的 API 存取權限
 
-### 選項 2: 使用初始化腳本
+### 安裝步驟
 
-1. 複製此儲存庫
-2. 執行初始化腳本：
+1. 複製儲存庫：
+
     ```bash
-    go run scripts/initpyrepo.go
+    git clone https://github.com/Mai0313/mcp_agents.git
+    cd mcp_agents
     ```
-3. 依照提示自訂您的專案
 
-### 選項 3: 手動設定
-
-1. 複製儲存庫
 2. 安裝依賴：
+
     ```bash
     make uv-install  # 如果尚未安裝 uv
     uv sync          # 安裝專案依賴
     ```
-3. 設定 pre-commit hooks：
+
+3. 設定環境變數：
+
     ```bash
-    make format      # 執行 pre-commit hooks
+    export API_KEY="your-llm-api-key"
+    export BASE_URL="your-llm-base-url"
+    export JIRA_PERSONAL_TOKEN="your-jira-token"
+    export CONFLUENCE_PERSONAL_TOKEN="your-confluence-token"
     ```
 
-### 選項 4: 快速自訂（推薦）
+### 基本使用方法
 
-1. 複製此儲存庫
-2. 全局替換 `mcp_agents` 為您的專案名稱（snake_case 格式）
-3. 全局替換 `MCPAgents` 為您的專案標題（PascalCase 格式）
-4. 執行初始設定：
-    ```bash
-    make uv-install && uv sync && make format
+1. **簡單模式** - 直接工具執行：
+
+    ```python
+    from main import MCPAgent, StdioServerParameters
+
+    # 配置 MCP 服務器（例如：Atlassian）
+    jira_params = StdioServerParameters(
+        command="uvx",
+        args=["mcp-atlassian==0.11.2"],
+        env={
+            "JIRA_URL": "https://your-jira-instance",
+            "CONFLUENCE_URL": "https://your-confluence-instance",
+            "JIRA_PERSONAL_TOKEN": "your-token",
+            "CONFLUENCE_PERSONAL_TOKEN": "your-token",
+        },
+    )
+
+    # 創建並運行代理
+    agent = MCPAgent(model="gpt-4", params=jira_params)
+    result = agent.run("為錯誤修復創建新的 Jira 票券")
+    ```
+
+2. **群體模式** - 多代理協作：
+
+    ```python
+    # 使用群體模式處理複雜任務
+    result = asyncio.run(agent.a_run_swarm("分析專案需求並在 Confluence 中創建文檔"))
     ```
 
 ## 📁 專案結構
 
 ```
-├── .devcontainer/          # VS Code Dev Container 配置
 ├── .github/
 │   ├── workflows/          # CI/CD 工作流程
-│   └── copilot-instructions.md
+│   └── copilot-instructions.md  # 詳細技術文檔
 ├── docker/                 # Docker 配置
 ├── docs/                   # MkDocs 文檔
 ├── scripts/                # 自動化腳本
-├── src/
-│   └── mcp_agents/      # 主要套件
-├── tests/                  # 測試套件
+│   ├── gen_docs.py        # 文檔生成
+│   └── __init__.py
+├── src/                    # 源代碼模組
+│   └── prompt.py          # 集中化提示管理
+├── main.py                # 主要 MCP Agent 實現
 ├── pyproject.toml          # 專案配置
 ├── Makefile               # 開發命令
-└── README.md
+├── docker-compose.yaml    # 容器編排
+└── README.md              # 專案概述
 ```
+
+## 🎯 使用案例
+
+### 📋 文檔管理
+
+- **Jira 操作**: 自動票券創建、狀態更新、專案管理
+- **Confluence 操作**: 頁面創建、內容編輯、文檔結構化
+- **跨平台整合**: Jira 和 Confluence 之間的無縫協調
+- **動態工具整合**: 實時發現和利用可用工具
+
+### 💻 軟體開發
+
+- **程式碼生成**: 採用最佳實踐的 AI 驅動程式碼撰寫
+- **Git 操作**: 自動化儲存庫管理和 PR 創建
+- **開發工作流程**: 端到端開發流程自動化
+- **適應性工具使用**: 自動適應可用的開發工具
+
+### 🔧 複雜任務編排
+
+- **多步驟規劃**: 將複雜任務分解為可管理的組件
+- **資源協調**: 智能分配專業代理
+- **錯誤處理**: 強大的容錯機制和錯誤恢復
+- **上下文感知執行**: 根據實際工具可用性生成系統消息
 
 ## 🛠️ 可用命令
 
 ```bash
 # 開發
 make clean          # 清理自動生成的檔案
-make format         # 執行 pre-commit hooks
+make format         # 執行 pre-commit hooks 和格式化
 make test           # 執行所有測試
 make gen-docs       # 生成文檔
 
@@ -135,50 +173,60 @@ make gen-docs       # 生成文檔
 make uv-install     # 安裝 uv 依賴管理器
 uv add <package>    # 添加生產依賴
 uv add <package> --dev  # 添加開發依賴
+uv sync            # 安裝所有依賴
 ```
 
-## 🎯 包含內容
+## 🔧 配置
 
-### CI/CD 工作流程
+### 環境變數
 
-- **測試**: PR 上的多版本 Python 測試
-- **程式碼品質**: 自動化 ruff 檢查和 pre-commit 驗證
-- **文檔**: 自動 GitHub Pages 部署
-- **發布**: 自動發布草稿和變更日誌生成
-- **標籤**: 基於 PR 內容的自動標籤
+- **API_KEY**: LLM API 存取必需
+- **BASE_URL**: LLM 服務基本 URL（用於 Azure OpenAI 或兼容服務）
+- **JIRA_PERSONAL_TOKEN**: 用於 Jira 整合
+- **CONFLUENCE_PERSONAL_TOKEN**: 用於 Confluence 整合
+- **GITHUB_TOKEN**: 用於 GitHub 整合（如果使用 GitHub MCP 服務器）
 
-### 開發工具
+### MCP 服務器配置
 
-- **ruff**: 快速 Python 檢查器和格式化器
-- **pytest**: 帶覆蓋率的測試框架
-- **pre-commit**: 程式碼品質的 Git hooks
-- **MkDocs**: 文檔生成
-- **Docker**: 容器化開發和部署
+系統支援多個 MCP 服務器：
 
-### 專案模板
+- **Atlassian (mcp-atlassian)**: Jira 和 Confluence 整合
+- **Context7 (@upstash/context7-mcp)**: 文檔和知識庫
+- **Codex (codex mcp)**: 程式碼相關操作
+- **Gitea (gitea-mcp)**: Git 儲存庫管理
+- **GitHub (SSE-based)**: 通過 Server-Sent Events 進行 GitHub 整合
 
-- **Python 套件**: 即用型套件結構
-- **配置檔案**: 包含所有必要的配置檔案
-- **文檔**: 完整的文檔設定
-- **測試**: 全面的測試配置
+## 🚀 執行模式
 
-## 🎨 自訂指南
+### 簡單模式 (`a_run`)
 
-### 專案名稱自訂
+- **單一代理**: 無複雜路由的直接工具存取
+- **快速執行**: 直接任務的最小開銷
+- **最適合**: 簡單的 Confluence/Jira 操作、直接工具執行
 
-本模板設計為可透過簡單的全局替換快速自訂：
+### 群體模式 (`a_run_swarm`)
 
-1. **替換套件名稱**: 將所有 `mcp_agents` 替換為您的專案名稱（建議使用 snake_case）
-2. **替換專案標題**: 將所有 `MCPAgents` 替換為您的專案標題（建議使用 PascalCase）
-3. **更新中繼資料**: 修改 `pyproject.toml` 中的作者、描述等資訊
+- **多代理**: 具有智能路由的專業代理
+- **高級協調**: 複雜任務分解和協作
+- **最適合**: 複雜工作流程、多系統整合、規劃任務
 
-範例：
+## 🏗️ 架構
 
-```bash
-# 如果您的專案叫做 "awesome_project"
-find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/mcp_agents/awesome_project/g'
-find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/MCPAgents/AwesomeProject/g'
-```
+### MCPAgent 類
+
+中央調度器，管理 MCP 連接並協調代理交互，支援 STDIO 和 SSE 協議。
+
+### 多代理系統
+
+- **管理代理**: 分析任務並路由到適當的專家
+- **文檔代理**: 處理 Jira 票券和 Confluence 頁面
+- **程式碼代理**: 管理軟體開發和 Git 操作
+- **規劃代理**: 提供策略規劃和任務分解
+- **執行代理**: 直接執行 MCP 工具
+
+### 動態工具發現
+
+系統在運行時自動發現可用的 MCP 工具，並生成上下文感知的系統消息以實現最佳代理性能。
 
 ## 🤝 貢獻
 
@@ -186,11 +234,15 @@ find . -type f -name "*.py" -o -name "*.md" -o -name "*.toml" | xargs sed -i 's/
 
 - 開啟問題回報錯誤或功能請求
 - 提交拉取請求進行改進
-- 分享您使用此模板的經驗
+- 分享您使用此 MCP 代理系統的經驗
+- 添加對新 MCP 服務器的支援
 
 ## 📖 文檔
 
-詳細文檔請訪問：[https://mai0313.github.io/mcp_agents/](https://mai0313.github.io/mcp_agents/)
+詳細的技術文檔和實現細節，請參閱：
+
+- [Copilot 指引](.github/copilot-instructions.md) - 完整技術文檔
+- [生成文檔](https://mai0313.github.io/mcp_agents/) - API 文檔和指南
 
 ## 👥 貢獻者
 

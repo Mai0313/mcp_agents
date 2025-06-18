@@ -250,6 +250,8 @@ if __name__ == "__main__":
     並且註明 此文章為 AI 產生，僅供參考
     """
 
+    message = """幫我查看一下我現在有哪一些repository"""
+
     # message = """幫我寫一個 snake game in python, 並存成 snake.py"""
 
     jira_params = StdioServerParameters(
@@ -280,9 +282,11 @@ if __name__ == "__main__":
         ],
     )
     github_params = SSEServerParameters(
-        url="https://api.githubcopilot.com/mcp/",
+        url="https://api.githubcopilot.com/mcp",
         headers={"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"},
     )
+    playwright_params = StdioServerParameters(command="npx", args=["-y", "@playwright/mcp@latest"])
 
-    mcp_agent = MCPAgent(model="aide-gpt-4o", params=jira_params)
+    mcp_agent = MCPAgent(model="aide-gpt-4o", params=playwright_params)
+    # print(mcp_agent.list_tools())
     asyncio.run(mcp_agent.a_run(message=message))

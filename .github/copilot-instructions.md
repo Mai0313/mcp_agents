@@ -44,58 +44,63 @@ The project focuses on practical MCP agent implementation with support for multi
 
 ### Specialized Agent Architecture
 
-The system now employs a sophisticated multi-agent architecture with specialized roles:
+The system employs a multi-agent architecture with specialized roles:
 
 #### **Manager Agent**
 
 - **Role**: Task analysis and routing coordinator
 - **Responsibilities**: Analyzes user requests and routes to appropriate specialist agents
-- **Routing Logic**: Documentation tasks → documentation_agent, Code tasks → code_agent, Complex tasks → planning_agent
+- **Routing Logic**: Simplified routing between documentation_agent and code_agent only
+- **System Message**: Uses manager-specific system message from `get_manager_system_message()`
 
 #### **Planning Agent**
 
-- **Role**: Strategic planning and task decomposition
-- **Responsibilities**: Breaks down complex tasks into actionable steps, identifies dependencies
-- **Handoff Strategy**: Routes to execution specialists based on plan requirements
+- **Role**: Strategic planning and task decomposition (currently implemented but not actively used in routing)
+- **Responsibilities**: Available for complex task decomposition but not integrated in current routing logic
+- **System Message**: Uses the same dynamic system message as other agents
 
 #### **Documentation Agent**
 
-- **Role**: Jira and Confluence operations specialist
-- **Expertise**: Ticket management, page creation/editing, content structuring
-- **Tools**: Dynamically configured with available Atlassian MCP tools
+- **Role**: Documentation and content management specialist
+- **Expertise**: Jira tickets, Confluence pages, content creation/editing
+- **Tools**: Has access to all available MCP tools through toolkit registration
 - **System Message**: Auto-generated based on real-time tool discovery
 
 #### **Code Agent**
 
-- **Role**: Software development and Git operations specialist
-- **Expertise**: Code writing, repository management, PR creation, development workflows
-- **Tools**: Specialized in Git MCP tools and code development
+- **Role**: Software development and technical operations specialist
+- **Expertise**: Code writing, development workflows, technical implementation
+- **Tools**: Has access to all available MCP tools through toolkit registration
+- **System Message**: Auto-generated based on real-time tool discovery
 
 #### **Execution Agent**
 
-- **Role**: Direct MCP tool execution specialist
-- **Expertise**: Tool authentication, error handling, cross-system operations
-- **Tools**: Access to all available MCP tools for specialized execution
+- **Role**: Direct MCP tool execution specialist (currently implemented but simplified)
+- **Expertise**: Tool execution and operation handling
+- **Tools**: Has access to all available MCP tools through toolkit registration
+- **System Message**: Auto-generated based on real-time tool discovery
 
 ### Key Methods
 
 - `a_list_tools()`: Lists available MCP tools asynchronously
-- `a_run(message)`: Executes simplified single-agent workflow
-- `a_run_swarm(message)`: Executes multi-agent swarm workflow
+- `a_run(message)`: Executes simplified single-agent workflow using `_create_toolkit_and_run_simple()`
+- `a_run_swarm(message)`: Executes multi-agent swarm workflow using `_create_toolkit_and_run()`
 - `_session_context()`: Context manager for MCP session handling
-- `_create_toolkit_and_run()`: Creates specialized agent swarm and orchestrates task execution
+- `_create_toolkit_and_run()`: Creates specialized agent swarm with manager-based routing
 - `_create_toolkit_and_run_simple()`: Simplified single-agent execution for direct tool usage
-- `_generate_dynamic_system_message()`: Dynamically generates system messages based on available tools
+- `_create_toolkit_and_run_v1()`: Legacy method (currently not used)
 
 ### Prompt Management System
 
-The system features a **centralized prompt management** architecture:
+The system features a **centralized prompt management** architecture in `src/prompt.py`:
 
 - **Centralized Prompts**: All system messages are managed in `src/prompt.py` for consistency and maintainability
-- **Dynamic Generation**: Prompts are generated based on actual available MCP tools at runtime
+- **Dynamic Generation**: Two main functions for generating prompts:
+    - `generate_dynamic_system_message(tools)`: Creates tool-aware system messages for specialist agents
+    - `get_manager_system_message(tools)`: Creates manager-specific routing messages
 - **Generic & Adaptable**: Prompts are tool-agnostic and work with any MCP server configuration
 - **Clean Format**: Professional, focused prompts without unnecessary decorations
-- **Reusable Functions**: Modular prompt generation for different agent types
+- **Tool Categorization**: Automatically categorizes tools by prefix patterns for better organization
 
 ### Dynamic Tool Discovery
 
@@ -109,18 +114,14 @@ The system features **dynamic tool discovery and system message generation**:
 
 This ensures that agents always have up-to-date information about available tools and can provide accurate guidance to users.
 
-- `a_list_tools()`: Lists available MCP tools asynchronously
-- `a_run(message)`: Executes agent with given message asynchronously
-- `_session_context()`: Context manager for MCP session handling
-- `_create_toolkit_and_run()`: Creates specialized agent swarm and orchestrates task execution
-
 ### Hand-off Strategy
 
-The system implements intelligent agent hand-offs using AutoGen's swarm capabilities:
+The system implements intelligent agent hand-offs using AutoGen's swarm capabilities with simplified routing:
 
-- **Condition-based routing**: Agents transition based on task analysis and completion status
-- **Fallback mechanisms**: AfterWork handlers ensure proper task completion and coordination
-- **Circular coordination**: Agents can collaborate across specialties when tasks require multiple domains
+- **Manager-based routing**: Manager agent analyzes tasks and routes to documentation_agent or code_agent
+- **Direct execution**: Specialist agents (documentation and code) execute tasks directly with MCP toolkit access
+- **Termination-based completion**: All agents use AfterWork(AfterWorkOption.TERMINATE) for clean task completion
+- **Simple coordination**: Current implementation focuses on clear task segregation rather than complex agent collaboration
 
 ### Supported Connection Types
 
@@ -215,6 +216,7 @@ The system supports two execution modes:
 - **Fast execution**: Minimal overhead for straightforward tasks
 - **Dynamic adaptation**: Automatically discovers and uses available tools
 - **Best for**: Simple Confluence/Jira operations, direct tool execution
+- **Implementation**: Uses `_create_toolkit_and_run_simple()` with a single MCP agent
 
 ### 🌊 Swarm Mode (`a_run_swarm`)
 
@@ -222,6 +224,50 @@ The system supports two execution modes:
 - **Advanced coordination**: Complex task decomposition and collaboration
 - **Fallback handling**: Robust error recovery and alternative approaches
 - **Best for**: Complex workflows, multi-system integration, planning tasks
+- **Implementation**: Uses `_create_toolkit_and_run()` with manager-based routing system
+
+## Implementation Details
+
+### Actual Code Structure
+
+The current implementation includes:
+
+- **MCPAgent class**: Main orchestrator with Pydantic model configuration
+- **Connection handling**: Both STDIO and SSE server parameter support
+- **LLM configuration**: Azure OpenAI with specific API endpoints and headers
+- **Session management**: Async context manager for MCP connections
+- **Tool discovery**: Real-time tool listing and categorization
+- **Agent specialization**: Five distinct agent types with specific roles
+
+### Current Routing Logic
+
+```python
+# Manager routes only to documentation_agent or code_agent
+register_hand_off(
+    agent=manager,
+    hand_to=[
+        OnCondition(
+            target=documentation_agent,
+            condition="The task involves Jira tickets, Confluence pages, or documentation management",
+        ),
+        OnCondition(
+            target=code_agent,
+            condition="The task involves coding, software development, or Git repository operations",
+        ),
+        AfterWork(agent=AfterWorkOption.TERMINATE),
+    ],
+)
+```
+
+### MCP Server Configurations
+
+The system supports multiple MCP servers with example configurations:
+
+- **Atlassian (mcp-atlassian)**: Jira and Confluence integration
+- **Context7 (@upstash/context7-mcp)**: Documentation and knowledge base
+- **Codex (codex mcp)**: Code-related operations
+- **Gitea (gitea-mcp)**: Git repository management
+- **GitHub (SSE-based)**: GitHub integration via Server-Sent Events
 
 ## Tool Discovery Process
 
@@ -231,3 +277,33 @@ The system supports two execution modes:
 4. **System Message Generation**: Create context-aware instructions for agents
 5. **Agent Configuration**: Set up agents with appropriate tool access and expertise
 6. **Task Execution**: Route and execute tasks using the most suitable approach
+
+## Prompt System Architecture
+
+### Core Prompt Functions (`src/prompt.py`)
+
+- **`generate_dynamic_system_message(tools)`**: Creates adaptive system messages for specialist agents
+
+    - Groups tools by category using prefix patterns
+    - Generates detailed tool descriptions (truncated to 120 characters)
+    - Returns comprehensive system message with tool categorization
+
+- **`get_manager_system_message(tools)`**: Creates manager-specific routing instructions
+
+    - Extracts tool categories for routing decisions
+    - Focuses on task analysis and agent assignment
+    - Provides clear routing guidelines for documentation vs code tasks
+
+### Message Templates
+
+- **`_FALLBACK_MESSAGE`**: Used when no tools are available
+- **`_MANAGER_MESSAGE`**: Template for manager agent with routing logic
+- **`_ASST_MESSAGE`**: Template for specialist agents with tool access
+
+### Tool Categorization Logic
+
+The system automatically categorizes tools by extracting prefixes from tool names:
+
+- Tools like `jira_create_ticket` → "Jira" category
+- Tools like `confluence_create_page` → "Confluence" category
+- Generic tools without prefixes → "General" category
