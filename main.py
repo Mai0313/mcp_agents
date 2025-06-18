@@ -224,11 +224,6 @@ class MCPAgent(BaseModel):
 
     async def a_run(self, message: str) -> Message:
         async with self._session_context() as session:
-            return await self._create_toolkit_and_run_simple(message=message, session=session)
-
-    async def a_run_swarm(self, message: str) -> ChatResult:
-        """Run using the swarm version with multiple specialized agents"""
-        async with self._session_context() as session:
             return await self._create_toolkit_and_run(message=message, session=session)
 
     def list_tools(self) -> ListToolsResult:
@@ -250,7 +245,7 @@ if __name__ == "__main__":
     並且註明 此文章為 AI 產生，僅供參考
     """
 
-    message = """幫我查看一下我現在有哪一些repository"""
+    # message = """幫我查看一下我現在有哪一些repository"""
 
     # message = """幫我寫一個 snake game in python, 並存成 snake.py"""
 
