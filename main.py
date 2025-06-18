@@ -5,13 +5,22 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from mcp import ClientSession, StdioServerParameters
-from autogen import LLMConfig, AssistantAgent
+from autogen import LLMConfig, ChatResult, AssistantAgent, UserProxyAgent
 from pydantic import BaseModel, ConfigDict, computed_field
 from mcp.types import ListToolsResult
 from autogen.mcp import create_toolkit
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from autogen.io.run_response import Message
+from autogen.agentchat.contrib.swarm_agent import (
+    AfterWork,
+    OnCondition,
+    AfterWorkOption,
+    register_hand_off,
+    initiate_swarm_chat,
+)
+
+from src.prompt import get_manager_system_message, generate_dynamic_system_message
 
 
 class SSEServerParameters(BaseModel):
@@ -72,7 +81,7 @@ class MCPAgent(BaseModel):
         async with self._session_context() as session:
             return await session.list_tools()
 
-    async def _create_toolkit_and_run(self, message: str, session: ClientSession) -> Message:
+    async def _create_toolkit_and_run_v1(self, message: str, session: ClientSession) -> Message:
         # plan_agent = AssistantAgent(name="plan_agent", llm_config=self.llm_config)
         mcp_agent = AssistantAgent(name="mcp_agent", llm_config=self.llm_config)
 
@@ -87,7 +96,138 @@ class MCPAgent(BaseModel):
         await result.process()
         return await result.messages
 
+    async def _create_toolkit_and_run_simple(
+        self, message: str, session: ClientSession
+    ) -> ChatResult:
+        # plan_agent = AssistantAgent(name="plan_agent", llm_config=self.llm_config)
+        mcp_agent = AssistantAgent(name="mcp_agent", llm_config=self.llm_config)
+
+        toolkit = await create_toolkit(session=session)
+        result = await mcp_agent.a_run(
+            # recipient=assistant,
+            message=message,
+            tools=toolkit.tools,
+            max_turns=10,
+            user_input=False,
+        )
+        await result.process()
+        return await result.messages
+
+    async def _create_toolkit_and_run(self, message: str, session: ClientSession) -> ChatResult:
+        user = UserProxyAgent(name="User", code_execution_config=False)
+
+        tools_result = await session.list_tools()
+        tools = tools_result.tools
+
+        # Manager Agent - Routes tasks to appropriate specialists
+        manager_message = await get_manager_system_message(tools=tools)
+        manager = AssistantAgent(
+            name="manager",
+            system_message=manager_message,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+        )
+
+        agent_message = await generate_dynamic_system_message(tools=tools)
+        planning_agent = AssistantAgent(
+            name="planning_agent",
+            system_message=agent_message,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+        )
+        documentation_agent = AssistantAgent(
+            name="documentation_agent",
+            system_message=agent_message,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+        )
+        code_agent = AssistantAgent(
+            name="code_agent",
+            system_message=agent_message,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+        )
+        execution_agent = AssistantAgent(
+            name="execution_agent",
+            system_message=agent_message,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+        )
+
+        # Manager routes to specialists based on task type
+        register_hand_off(
+            agent=manager,
+            hand_to=[
+                OnCondition(
+                    target=documentation_agent,
+                    condition="The task involves Jira tickets, Confluence pages, or documentation management",
+                ),
+                OnCondition(
+                    target=code_agent,
+                    condition="The task involves coding, software development, or Git repository operations",
+                ),
+                AfterWork(agent=AfterWorkOption.TERMINATE),  # Terminate if no specific routing
+            ],
+        )
+
+        # Documentation agent executes documentation tasks directly
+        register_hand_off(
+            agent=documentation_agent,
+            hand_to=[
+                AfterWork(
+                    agent=AfterWorkOption.TERMINATE
+                )  # Terminate after completing documentation tasks
+            ],
+        )
+
+        # Code agent handles development tasks directly
+        register_hand_off(
+            agent=code_agent,
+            hand_to=[
+                AfterWork(agent=AfterWorkOption.TERMINATE)  # Terminate after completing code tasks
+            ],
+        )
+
+        # Planning agent is simplified - mainly for complex routing if needed
+        register_hand_off(
+            agent=planning_agent,
+            hand_to=[
+                AfterWork(agent=AfterWorkOption.TERMINATE)  # Terminate after planning
+            ],
+        )
+
+        # Execution agent handles tool operations, reports back
+        register_hand_off(
+            agent=execution_agent,
+            hand_to=[
+                AfterWork(agent=AfterWorkOption.TERMINATE)  # Terminate after tool execution
+            ],
+        )
+
+        # Register MCP toolkit with documentation agent (so it can use tools directly)
+        toolkit = await create_toolkit(session=session)
+        toolkit.register_for_execution(documentation_agent)
+        toolkit.register_for_execution(code_agent)
+        toolkit.register_for_execution(execution_agent)
+
+        # Create agent list for swarm chat
+        all_agents = [manager, planning_agent, documentation_agent, code_agent, execution_agent]
+
+        history, context, last_agent = initiate_swarm_chat(
+            initial_agent=manager,
+            agents=all_agents,
+            user_agent=user,
+            messages=message,
+            after_work=AfterWork(AfterWorkOption.TERMINATE),
+        )
+        return history
+
     async def a_run(self, message: str) -> Message:
+        async with self._session_context() as session:
+            return await self._create_toolkit_and_run_simple(message=message, session=session)
+
+    async def a_run_swarm(self, message: str) -> ChatResult:
+        """Run using the swarm version with multiple specialized agents"""
         async with self._session_context() as session:
             return await self._create_toolkit_and_run(message=message, session=session)
 
@@ -104,16 +244,10 @@ if __name__ == "__main__":
     # """
 
     message = """
-    請幫我在 https://wiki.mediatek.inc/pages/viewpage.action?pageId=1516686162 創建一個新頁面
-    這個頁面是 confluence 的 Personal Space 頁面
-    說明一下什麼是 Model Context Protocol (MCP)
-    並且註明 此文章為 AI 產生，僅供參考
-    """
-
-    message = """
     請幫我在 https://wiki.mediatek.inc/pages/viewpage.action?pageId=1516686162 這個頁面新增內容
     這個頁面是 confluence 頁面
-    寫 此由 AI 產生，僅供參考
+    說明一下什麼是 Model Context Protocol (MCP)
+    並且註明 此文章為 AI 產生，僅供參考
     """
 
     # message = """幫我寫一個 snake game in python, 並存成 snake.py"""
@@ -144,6 +278,10 @@ if __name__ == "__main__":
             "--token",
             "...",
         ],
+    )
+    github_params = SSEServerParameters(
+        url="https://api.githubcopilot.com/mcp/",
+        headers={"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"},
     )
 
     mcp_agent = MCPAgent(model="aide-gpt-4o", params=jira_params)
