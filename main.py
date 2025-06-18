@@ -213,7 +213,7 @@ class MCPAgent(BaseModel):
         # Create agent list for swarm chat
         all_agents = [manager, planning_agent, documentation_agent, code_agent, execution_agent]
 
-        history, context, last_agent = initiate_swarm_chat(
+        history, *_ = initiate_swarm_chat(
             initial_agent=manager,
             agents=all_agents,
             user_agent=user,
@@ -287,6 +287,6 @@ if __name__ == "__main__":
     )
     playwright_params = StdioServerParameters(command="npx", args=["-y", "@playwright/mcp@latest"])
 
-    mcp_agent = MCPAgent(model="aide-gpt-4o", params=playwright_params)
+    mcp_agent = MCPAgent(model="aide-gpt-4o", params=jira_params)
     # print(mcp_agent.list_tools())
     asyncio.run(mcp_agent.a_run(message=message))
