@@ -20,6 +20,7 @@ from autogen.agentchat.contrib.swarm_agent import (
     initiate_swarm_chat,
 )
 
+from src.config import Config
 from src.prompt import (
     get_router_system_message,
     get_manager_system_message,
@@ -37,7 +38,7 @@ class SSEServerParameters(BaseModel):
     sse_read_timeout: int = 60
 
 
-class MCPAgent(BaseModel):
+class MCPAgent(Config):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     model: str
     params: StdioServerParameters | SSEServerParameters | str
@@ -54,25 +55,24 @@ class MCPAgent(BaseModel):
     @computed_field
     @property
     def llm_config(self) -> LLMConfig:
-        api_type = os.getenv("API_TYPE", "openai").lower()
-        if api_type == "azure":
+        if self.api_type == "azure":
             llm_config = LLMConfig(
                 model=self.model,
-                api_key=os.getenv("API_KEY"),
-                base_url=os.getenv("BASE_URL"),
+                api_key=self.api_key,
+                base_url=self.base_url,
                 api_version="2025-04-01-preview",
-                api_type=api_type,
+                api_type=self.api_type,
                 default_headers={"X-User-Id": "srv_dvc_tma001"},
             )
-        elif api_type == "openai":
+        elif self.api_type == "openai":
             llm_config = LLMConfig(
                 model=self.model,
-                api_key=os.getenv("API_KEY"),
-                base_url=os.getenv("BASE_URL"),
-                api_type=api_type,
+                api_key=self.api_key,
+                base_url=self.base_url,
+                api_type=self.api_type,
             )
         else:
-            raise ValueError(f"Unsupported API type: {api_type}")
+            raise ValueError(f"Unsupported API type: {self.api_type}")
         return llm_config
 
     @asynccontextmanager
