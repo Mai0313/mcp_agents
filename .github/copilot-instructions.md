@@ -4,19 +4,32 @@
 
 # Project Background
 
-This is the **MCP Agents** project - a Python project template and Model Context Protocol (MCP) agent implementation. The project serves as both a comprehensive Python project template with modern tooling and CI/CD pipelines, and a practical implementation of MCP agents that can interact with various services like Atlassian (Jira/Confluence), Git repositories, and other MCP-compatible tools.
+This is the **MCP Agents** project - a Model Context Protocol (MCP) agent implementation that enables intelligent automation through LLM-powered agents. The project demonstrates how to create agents using the Model Context Protocol to connect Large Language Models with external tools and services, enabling automated interactions with enterprise systems like Jira ticket management, Confluence documentation, and other MCP-compatible services.
 
-The project demonstrates how to create intelligent agents using the Model Context Protocol to connect Large Language Models (LLMs) with external tools and services, enabling automated interactions with enterprise systems like Jira ticket management and Confluence documentation.
+The project focuses on practical MCP agent implementation with support for multiple connection protocols and integration with various external services.
 
-# Project Structure / Features
+## Project Features
+
+### 🤖 MCP Agent Implementation
+- **MCPAgent Class**: Central orchestrator for MCP connections and agent interactions
+- **Multi-Protocol Support**: STDIO and SSE (Server-Sent Events) connections
+- **AutoGen Integration**: Leverages Microsoft's AutoGen for multi-agent conversations
+- **Async/Await Pattern**: Fully asynchronous implementation for efficient operations
+
+### 🔌 MCP Server Integrations
+- **Atlassian Integration**: Jira and Confluence operations via `mcp-atlassian`
+- **Context7**: Documentation and knowledge base access via `@upstash/context7-mcp`
+- **Codex**: Code-related operations via `codex mcp`
+- **Gitea**: Git repository management via `gitea-mcp`
+
+### 🛠️ Development Environment
+- **uv dependency management**: Fast, reliable Python package management
+- **Type hints**: Full type annotation support with Pydantic models
+- **Testing framework**: pytest with coverage reporting
+- **Code quality**: ruff linting and formatting
+- **Documentation**: MkDocs with automatic generation
 
 ## Core Architecture
-- **Main Application**: `main.py` - Contains the `MCPAgent` class that orchestrates MCP connections and AutoGen agents
-- **MCP Integration**: Uses the Model Context Protocol to connect with various external services
-- **AutoGen Framework**: Leverages Microsoft's AutoGen for multi-agent conversations and tool execution
-- **Async/Await Pattern**: Fully asynchronous implementation for efficient I/O operations
-
-## Key Components
 
 ### MCPAgent Class (`main.py`)
 - **Purpose**: Central class for managing MCP connections and agent interactions
@@ -24,41 +37,32 @@ The project demonstrates how to create intelligent agents using the Model Contex
 - **LLM Integration**: Configured for Azure OpenAI with specific API endpoints
 - **Tool Management**: Automatic discovery and execution of MCP tools
 
-### Supported MCP Servers
-- **Atlassian Integration**: Jira and Confluence operations via `mcp-atlassian`
-- **Context7**: Documentation and knowledge base access via `@upstash/context7-mcp`
-- **Codex**: Code-related operations via `codex mcp`
-- **Gitea**: Git repository management via `gitea-mcp`
+### Key Methods
+- `a_list_tools()`: Lists available MCP tools asynchronously
+- `a_run(message)`: Executes agent with given message asynchronously
+- `_session_context()`: Context manager for MCP session handling
+- `_create_toolkit_and_run()`: Creates toolkit from MCP session and runs agent
 
-## Project Template Features
+### Supported Connection Types
+- **StdioServerParameters**: For command-line MCP servers
+- **SSEServerParameters**: For HTTP-based MCP servers with Server-Sent Events
 
-### 🏗️ Modern Development Environment
-- **uv dependency management**: Fast, reliable Python package management
-- **Multi-version support**: Python 3.10, 3.11, and 3.12
-- **Type hints**: Full type annotation support with Pydantic models
-- **VS Code Dev Container**: Fully configured development environment
+## Usage Examples
 
-### 🧪 Testing & Quality Assurance
-- **pytest framework**: Comprehensive testing with 80% coverage requirement
-- **Parallel execution**: Faster test runs with pytest-xdist
-- **ruff linting**: Fast Python linter and formatter
-- **pre-commit hooks**: Automated code quality checks
+The project includes examples for:
+- Atlassian Jira/Confluence operations
+- Documentation queries with Context7
+- Code operations with Codex
+- Git repository management with Gitea
 
-### 🚀 CI/CD Pipeline
-- **Multi-version testing**: Automated testing across Python versions
-- **Code quality checks**: Automated linting and formatting validation
-- **Documentation deployment**: Automatic GitHub Pages deployment with MkDocs
-- **Release automation**: Semantic versioning and changelog generation
-
-### 📚 Documentation System
-- **MkDocs Material**: Beautiful, responsive documentation
-- **Auto-generation**: `scripts/gen_docs.py` for generating docs from code
-- **Blog support**: Built-in blog functionality for project updates
-- **API documentation**: Automatic API reference generation
+## Environment Variables
+- **API_KEY**: Required for LLM API access
+- **JIRA_PERSONAL_TOKEN**: For Jira integration
+- **CONFLUENCE_PERSONAL_TOKEN**: For Confluence integration
+- Various SSL and configuration options for different MCP servers
 
 ## File Structure
 ```
-├── .devcontainer/          # VS Code Dev Container configuration
 ├── .github/
 │   ├── workflows/          # CI/CD workflows (test, code-quality, docs)
 │   └── copilot-instructions.md
@@ -83,11 +87,4 @@ The project demonstrates how to create intelligent agents using the Model Contex
 ## Configuration Files
 - **pyproject.toml**: Comprehensive project configuration including pytest, coverage, and ruff settings
 - **mkdocs.yml**: Documentation site configuration
-- **.pre-commit-config.yaml**: Git hooks for code quality
 - **docker-compose.yaml**: Container orchestration for development and deployment
-
-## Environment Variables
-- **API_KEY**: Required for LLM API access
-- **JIRA_PERSONAL_TOKEN**: For Jira integration
-- **CONFLUENCE_PERSONAL_TOKEN**: For Confluence integration
-- Various SSL and configuration options for different MCP servers
