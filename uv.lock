@@ -1327,7 +1327,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mcp-agent"
+name = "mcp-agents"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
