@@ -2,123 +2,92 @@
 
 ⚠️ **IMPORTANT**: After making any code changes, adding features, or updating functionality, you MUST update .github/copilot-instructions.md to reflect the current project state and capabilities.
 
-# Python Project Template
+# Project Background
 
-This is a comprehensive Python project template designed to help developers quickly bootstrap new projects with complete CI/CD pipelines, modern tooling, and best practices. The template includes everything needed to start a professional Python project without spending time on infrastructure setup.
+This is the **MCP Agents** project - a Python project template and Model Context Protocol (MCP) agent implementation. The project serves as both a comprehensive Python project template with modern tooling and CI/CD pipelines, and a practical implementation of MCP agents that can interact with various services like Atlassian (Jira/Confluence), Git repositories, and other MCP-compatible tools.
 
-## Project Features
+The project demonstrates how to create intelligent agents using the Model Context Protocol to connect Large Language Models (LLMs) with external tools and services, enabling automated interactions with enterprise systems like Jira ticket management and Confluence documentation.
 
-### Core Infrastructure
+# Project Structure / Features
 
-- **Modern Python**: Supports Python 3.10, 3.11, and 3.12
-- **Dependency Management**: Uses `uv` for fast and reliable dependency management
-- **Project Structure**: src/ layout following Python packaging best practices
-- **Docker Support**: Multi-stage Dockerfile for development and production
-- **VS Code Dev Container**: Fully configured development environment with zsh, oh-my-zsh, and powerlevel10k
+## Core Architecture
+- **Main Application**: `main.py` - Contains the `MCPAgent` class that orchestrates MCP connections and AutoGen agents
+- **MCP Integration**: Uses the Model Context Protocol to connect with various external services
+- **AutoGen Framework**: Leverages Microsoft's AutoGen for multi-agent conversations and tool execution
+- **Async/Await Pattern**: Fully asynchronous implementation for efficient I/O operations
 
-### Code Quality & Testing
+## Key Components
 
-- **Pre-commit Hooks**: Automated code formatting and linting with ruff
-- **Testing Framework**: pytest with coverage reporting, parallel execution, and detailed reporting
-- **Code Coverage**: Comprehensive coverage tracking with HTML and XML reports
-- **Type Checking**: Full type hint support and validation
+### MCPAgent Class (`main.py`)
+- **Purpose**: Central class for managing MCP connections and agent interactions
+- **Supported Protocols**: STDIO and SSE (Server-Sent Events) connections
+- **LLM Integration**: Configured for Azure OpenAI with specific API endpoints
+- **Tool Management**: Automatic discovery and execution of MCP tools
 
-### CI/CD Pipeline
+### Supported MCP Servers
+- **Atlassian Integration**: Jira and Confluence operations via `mcp-atlassian`
+- **Context7**: Documentation and knowledge base access via `@upstash/context7-mcp`
+- **Codex**: Code-related operations via `codex mcp`
+- **Gitea**: Git repository management via `gitea-mcp`
 
-- **Automated Testing**: Multi-version Python testing on pull requests
-- **Code Quality Checks**: Automated ruff checks and pre-commit validation
-- **Documentation Deployment**: Automatic GitHub Pages deployment for MkDocs
-- **Release Management**: Automated release drafting and semantic versioning
-- **Auto-labeling**: Intelligent PR labeling based on changes
+## Project Template Features
 
-### Documentation
+### 🏗️ Modern Development Environment
+- **uv dependency management**: Fast, reliable Python package management
+- **Multi-version support**: Python 3.10, 3.11, and 3.12
+- **Type hints**: Full type annotation support with Pydantic models
+- **VS Code Dev Container**: Fully configured development environment
 
-- **MkDocs**: Material theme with automatic API documentation generation
-- **Auto-generated Docs**: Scripts to generate documentation from Python code and Jupyter notebooks
-- **Blog Support**: Built-in blog functionality for project updates
+### 🧪 Testing & Quality Assurance
+- **pytest framework**: Comprehensive testing with 80% coverage requirement
+- **Parallel execution**: Faster test runs with pytest-xdist
+- **ruff linting**: Fast Python linter and formatter
+- **pre-commit hooks**: Automated code quality checks
 
-### Automation Scripts
+### 🚀 CI/CD Pipeline
+- **Multi-version testing**: Automated testing across Python versions
+- **Code quality checks**: Automated linting and formatting validation
+- **Documentation deployment**: Automatic GitHub Pages deployment with MkDocs
+- **Release automation**: Semantic versioning and changelog generation
 
-- **Project Initialization**: Go script (`scripts/initpyrepo.go`) for creating new projects from template
-- **Documentation Generation**: Python script (`scripts/gen_docs.py`) for auto-generating docs from code
+### 📚 Documentation System
+- **MkDocs Material**: Beautiful, responsive documentation
+- **Auto-generation**: `scripts/gen_docs.py` for generating docs from code
+- **Blog support**: Built-in blog functionality for project updates
+- **API documentation**: Automatic API reference generation
 
-## Project Usage
-
-This template is designed to be cloned and customized for new Python projects. Developers can use the initialization script to create new projects with personalized configurations while maintaining all the CI/CD and tooling benefits.
-
-### Template Customization Strategy
-
-When users clone this project, they can quickly customize it by performing global replacements:
-
-- **Replace `mcp_agents`** → Replace with their actual project name (snake_case format)
-- **Replace `MCPAgents`** → Replace with their project title (PascalCase format)
-
-This allows users to instantly personalize the entire project structure, package names, imports, and documentation while keeping all the CI/CD infrastructure intact.
-
-# Python Best Practices
-
-## Coding Style
-
-- Follow `ruff-check` and `ruff-format` for code style and formatting using `pre-commit` hooks.
-- Follow PEP 8 naming conventions:
-    - snake_case for functions and variables
-    - PascalCase for classes
-    - UPPER_CASE for constants
-- Follow the Python version specified in the `pyproject.toml` or `.python-version` file.
-- Use pydantic model, and all pydantic models should include `Field`, and `description` should be included.
-- Maximum line length of 99 characters
-- Use absolute imports over relative imports
-- Use `pytest` for testing, and all tests should be placed in the `tests/` directory
-
-### Example
-
-```python
-from pydantic import BaseModel, Field
-
-
-class User(BaseModel):
-    """Example User model.
-
-    Attributes:
-        name (str): The name of the user
-    """
-
-    name: str = Field(..., description="The name of the user")
-
-
-def foo(self, extra_input: str) -> str:
-    """Example function.
-
-    Args:
-        extra_input (str): Extra input for the function
-
-    Returns:
-        str: Result of the function
-    """
-    return f"Hello, {self.name} and {extra_input}"
+## File Structure
+```
+├── .devcontainer/          # VS Code Dev Container configuration
+├── .github/
+│   ├── workflows/          # CI/CD workflows (test, code-quality, docs)
+│   └── copilot-instructions.md
+├── docker/                 # Docker configurations with multi-stage builds
+├── docs/                   # MkDocs documentation source
+├── scripts/                # Automation scripts
+│   ├── gen_docs.py        # Documentation generation script
+│   └── __init__.py
+├── main.py                # Main MCP Agent implementation
+├── pyproject.toml         # Project configuration with comprehensive settings
+├── Makefile              # Development commands
+├── docker-compose.yaml   # Container orchestration
+└── README.md             # Comprehensive project documentation
 ```
 
-## Type Hints
+## Development Workflow
+- **Make commands**: `make clean`, `make format`, `make test`, `make gen-docs`
+- **uv commands**: `uv add <package>`, `uv sync`, `uv run`
+- **Testing**: pytest with coverage reporting and parallel execution
+- **Documentation**: Automatic generation from code and markdown sources
 
-- Use type hints for all function parameters and returns
-- Use `TypeVar` for generic types
-- Use `Protocol` for duck typing
+## Configuration Files
+- **pyproject.toml**: Comprehensive project configuration including pytest, coverage, and ruff settings
+- **mkdocs.yml**: Documentation site configuration
+- **.pre-commit-config.yaml**: Git hooks for code quality
+- **docker-compose.yaml**: Container orchestration for development and deployment
 
-## Documentation
-
-- Use Google-style docstrings
-- All documentation should be in English
-- Use proper inline comments for better mkdocs support
-- Document environment setup
-
-## Dependencies
-
-- Use `uv` for dependency management
-- Separate dev dependencies by adding `--dev` flag when adding dependencies
-    - Production:
-        - Add Dependencies: `uv add <package>`
-        - Remove Dependencies: `uv remove <package>`
-    - Development:
-        - Add Dependencies: `uv add <package> --dev`
-        - Remove Dependencies: `uv remove <package> --dev`
-- Regularly update dependencies
+## Environment Variables
+- **API_KEY**: Required for LLM API access
+- **JIRA_PERSONAL_TOKEN**: For Jira integration
+- **CONFLUENCE_PERSONAL_TOKEN**: For Confluence integration
+- Various SSL and configuration options for different MCP servers
