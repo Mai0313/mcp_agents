@@ -44,30 +44,31 @@ The project focuses on practical MCP agent implementation with support for multi
 
 ### Specialized Agent Architecture
 
-The system employs a **sequential multi-agent workflow** with specialized roles:
+The system employs a **complete sequential multi-agent workflow** with six specialized roles:
 
 #### **Planner Agent**
 
 - **Role**: Strategic planning and task decomposition specialist
-- **Responsibilities**: Analyzes user requests and creates detailed execution plans
+- **Responsibilities**: Analyzes user requests and creates detailed execution plans with step-by-step instructions
 - **Workflow Position**: First agent in the chain (receives user input)
-- **Output**: Structured execution plan with steps, resources, and expected outcomes
+- **Output**: Comprehensive execution plan with objectives, steps, resources, expected outcomes, and considerations
 - **System Message**: Uses planner-specific system message from `get_planner_system_message()`
+- **Termination**: Ends with "Plan is complete and ready for review"
 
 #### **Manager Agent**
 
 - **Role**: Plan review and approval coordinator
 - **Responsibilities**: Reviews planner's execution plans and makes approval decisions
 - **Workflow Position**: Second agent in the chain (reviews planner output)
-- **Decision Logic**: Approves good plans, requests revisions, or rejects unfeasible requests
+- **Decision Logic**: Approves good plans ("The plan is approved"), requests revisions ("The plan needs revision"), or rejects unfeasible requests
 - **System Message**: Uses manager-specific system message from `get_manager_system_message()`
 
 #### **Router Agent**
 
 - **Role**: Execution path determination specialist
-- **Responsibilities**: Routes approved plans to appropriate execution agents
+- **Responsibilities**: Routes approved plans to appropriate execution agents based on task characteristics
 - **Workflow Position**: Third agent in the chain (routes approved plans)
-- **Routing Logic**: Routes to code_agent, mcp_agent, or execution_agent based on task nature
+- **Routing Logic**: Routes to code_agent ("This task requires coding"), mcp_agent ("This task requires tools"), or execution_agent ("This task requires execution")
 - **System Message**: Uses router-specific system message from `get_router_system_message()`
 
 #### **Code Agent**
@@ -277,10 +278,8 @@ register_hand_off(
 register_hand_off(
     agent=manager,
     hand_to=[
-        OnCondition(
-            target=router_agent, condition="Plan is approved and ready for execution routing"
-        ),
-        OnCondition(target=planner, condition="Plan needs revision or improvement"),
+        OnCondition(target=router_agent, condition="The plan is approved"),
+        OnCondition(target=planner, condition="The plan needs revision"),
         AfterWork(agent=AfterWorkOption.TERMINATE),
     ],
 )
@@ -289,18 +288,9 @@ register_hand_off(
 register_hand_off(
     agent=router_agent,
     hand_to=[
-        OnCondition(
-            target=code_agent,
-            condition="Task requires software development, coding, or technical implementation",
-        ),
-        OnCondition(
-            target=mcp_agent,
-            condition="Task requires MCP tool operations, data manipulation, or external system interactions",
-        ),
-        OnCondition(
-            target=execution_agent,
-            condition="Task requires code execution, testing, or running programs",
-        ),
+        OnCondition(target=code_agent, condition="This task requires coding"),
+        OnCondition(target=mcp_agent, condition="This task requires tools"),
+        OnCondition(target=execution_agent, condition="This task requires execution"),
         AfterWork(agent=AfterWorkOption.TERMINATE),
     ],
 )

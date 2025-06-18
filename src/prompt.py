@@ -5,30 +5,36 @@ Analyze the user's request and use the available tools to complete their task.
 Always execute actual tool calls rather than just describing what you would do.
 """
 
-_PLANNER_MESSAGE = """You are a Strategic Planner and Task Coordinator responsible for analyzing user requests and assigning them to the appropriate specialist agents.
+_PLANNER_MESSAGE = """You are a Strategic Planner responsible for creating detailed execution plans for user requests.
 
 Your responsibilities:
 1. Analyze the user's request to understand what needs to be accomplished
-2. Determine which specialist agent is best suited for the task
-3. Assign the task directly to the appropriate agent with clear instructions
-
-Available specialist agents:
-- **code_agent**: Handles software development, coding, programming tasks, code writing, and technical implementation
-- **mcp_agent**: Handles external tool operations, API calls, system integrations (Jira, Confluence, Git, etc.), data manipulation
-- **execution_agent**: Handles code execution, testing, running programs, and validating functionality
+2. Break down complex tasks into clear, actionable steps
+3. Create a comprehensive execution plan with step-by-step instructions
+4. Identify required resources and expected outcomes
+5. Hand over the completed plan to the manager for review
 
 Available tool categories in the system:
 {categories_text}
 
-Assignment Guidelines:
-- Assign to **code_agent** for: Programming, software development, writing code, technical design, code review
-- Assign to **mcp_agent** for: Jira operations, Confluence operations, Git operations, API calls, external system interactions, data processing
-- Assign to **execution_agent** for: Running code, executing scripts, testing programs, performance monitoring
+Planning Guidelines:
+- Create detailed, step-by-step execution plans
+- Include specific actions, expected inputs/outputs, and success criteria
+- Consider dependencies between steps
+- Identify potential challenges and mitigation strategies
+- Specify what tools or capabilities might be needed
 
-IMPORTANT: After analyzing the task, assign it directly to the most appropriate agent by ending your response with one of these exact agent names:
-- "code_agent"
-- "mcp_agent"
-- "execution_agent"
+Plan Structure:
+1. **Objective**: Clear statement of what needs to be accomplished
+2. **Steps**: Detailed breakdown of actions required
+3. **Resources**: Tools, agents, or capabilities needed
+4. **Expected Outcome**: What success looks like
+5. **Considerations**: Potential challenges or special requirements
+
+IMPORTANT: After creating your comprehensive plan, end your response with:
+"Plan is complete and ready for review"
+
+Focus on strategic planning - the manager will review your plan and the router will handle agent assignments.
 """
 
 _MANAGER_MESSAGE = """You are a Task Manager responsible for reviewing plans and making approval decisions.
@@ -219,6 +225,28 @@ async def get_code_agent_system_message() -> str:
 async def get_execution_agent_system_message() -> str:
     """Generate execution agent system message (doesn't need MCP tool details)"""
     return _EXECUTION_AGENT_MESSAGE
+
+
+async def get_manager_system_message(tools: list[Tool] | None) -> str:
+    """Generate manager agent system message"""
+    if not tools:
+        return _FALLBACK_MESSAGE
+    categories_text = ""
+    for tool in tools:
+        categories_text += f"\n- `{tool.name}`"
+    manager_message = _MANAGER_MESSAGE.format(categories_text=categories_text)
+    return manager_message
+
+
+async def get_router_system_message(tools: list[Tool] | None) -> str:
+    """Generate router agent system message"""
+    if not tools:
+        return _FALLBACK_MESSAGE
+    categories_text = ""
+    for tool in tools:
+        categories_text += f"\n- `{tool.name}`"
+    router_message = _ROUTER_MESSAGE.format(categories_text=categories_text)
+    return router_message
 
 
 async def get_mcp_agent_system_message(tools: list[Tool] | None) -> str:
