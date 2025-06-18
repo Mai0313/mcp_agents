@@ -54,14 +54,25 @@ class MCPAgent(BaseModel):
     @computed_field
     @property
     def llm_config(self) -> LLMConfig:
-        llm_config = LLMConfig(
-            model=self.model,
-            api_key=os.getenv("API_KEY"),
-            base_url=os.getenv("BASE_URL"),
-            api_version="2025-04-01-preview",
-            api_type="azure",
-            default_headers={"X-User-Id": "srv_dvc_tma001"},
-        )
+        api_type = os.getenv("API_TYPE", "openai").lower()
+        if api_type == "azure":
+            llm_config = LLMConfig(
+                model=self.model,
+                api_key=os.getenv("API_KEY"),
+                base_url=os.getenv("BASE_URL"),
+                api_version="2025-04-01-preview",
+                api_type=api_type,
+                default_headers={"X-User-Id": "srv_dvc_tma001"},
+            )
+        elif api_type == "openai":
+            llm_config = LLMConfig(
+                model=self.model,
+                api_key=os.getenv("API_KEY"),
+                base_url=os.getenv("BASE_URL"),
+                api_type=api_type,
+            )
+        else:
+            raise ValueError(f"Unsupported API type: {api_type}")
         return llm_config
 
     @asynccontextmanager
