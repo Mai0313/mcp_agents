@@ -5,29 +5,14 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from mcp import ClientSession, StdioServerParameters
-from autogen import ChatResult, AssistantAgent, UserProxyAgent
+from autogen import ChatResult, AssistantAgent
 from pydantic import BaseModel, ConfigDict, computed_field
-from mcp.types import ListToolsResult
 from autogen.mcp import create_toolkit
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from autogen.io.run_response import Message
-from autogen.agentchat.contrib.swarm_agent import (
-    AfterWork,
-    OnCondition,
-    AfterWorkOption,
-    register_hand_off,
-    initiate_swarm_chat,
-)
 
 from src.config import Config
-from src.prompt import (
-    get_manager_system_message,
-    get_planner_system_message,
-    get_mcp_agent_system_message,
-    get_code_agent_system_message,
-    get_execution_agent_system_message,
-)
 
 
 class SSEServerParameters(BaseModel):
@@ -69,19 +54,112 @@ class MCPAgent(Config):
         else:
             raise ValueError("Invalid parameters provided for MCPAgent.")
 
-    async def a_list_tools(self) -> ListToolsResult:
-        """List available MCP tools."""
-        async with self._session_context() as session:
-            return await session.list_tools()
+    async def get_tool_detail(self) -> str:
+        try:
+            async with self._session_context() as session:
+                tools_result = await session.list_tools()
+                tool_detail = ""
+                for tool in tools_result.tools:
+                    tool_detail += f"\n- `{tool.name}`:\n{tool.description}"
+        except Exception:
+            tool_detail = "No tools available or an error occurred while fetching tool details."
+        return tool_detail
 
-    async def _create_toolkit_and_run_v1(self, message: str, session: ClientSession) -> Message:
-        # plan_agent = AssistantAgent(name="plan_agent", llm_config=self.llm_config)
-        mcp_agent = AssistantAgent(name="mcp_agent", llm_config=self.llm_config)
+    async def _create_toolkit_and_run(self, message: str, session: ClientSession) -> Message:
+        assistant = AssistantAgent(
+            name="assistant",
+            system_message="""You are an Assistant Agent who provides comprehensive answers and content preparation for user requests.
+
+            Your responsibilities:
+            1. Understand the user's question or request thoroughly
+            2. Provide detailed answers or content that fulfills what the user is asking for
+            3. If the user asks for explanations (like "說明一下什麼是..."), provide comprehensive explanations
+            4. Prepare any content, information, or answers that will be needed in the execution
+            5. Work in the user's language when appropriate
+            6. Focus on WHAT content/information needs to be provided, not just HOW to do it
+
+            Example: If user asks to "add explanation of MCP to a page", you should:
+            - Provide a detailed explanation of what MCP is
+            - Suggest the content format and structure
+            - Include any disclaimers or notes requested
+
+            You will work with a planner who will use your content and create technical execution plans.
+            REPLY `TERMINATE` if the request cannot be fulfilled or requires human intervention.
+            """,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+            is_termination_msg=lambda x: "TERMINATE" in x.get("content"),
+        )
+
+        planner = AssistantAgent(
+            name="planner",
+            system_message="""You are a Strategic Planner responsible for creating detailed execution plans.
+
+            Your responsibilities:
+            1. Take the assistant's comprehensive answers and content
+            2. Incorporate the assistant's content into a technical execution plan
+            3. Map the execution steps to available MCP tools
+            4. Ensure the assistant's prepared content is included in the final plan
+            5. Create step-by-step instructions for the MCP agent
+
+            Key principle: The assistant provides WHAT content/information to use,
+            you provide HOW to execute it technically using the available tools.
+
+            You will receive:
+            - Detailed content and answers from the assistant
+            - A list of available MCP tools
+
+            Create a comprehensive plan that includes both the assistant's content AND
+            the technical steps for the MCP agent to execute.
+            REPLY `TERMINATE` if the request cannot be fulfilled or requires human intervention.
+            """,
+            llm_config=self.llm_config,
+            human_input_mode="NEVER",
+            is_termination_msg=lambda x: "TERMINATE" in x.get("content"),
+        )
+
+        # Get available tools information
+        tool_detail = await self.get_tool_detail()
+
+        # Step 1: Assistant analyzes the user's request
+        assistant_plan = await assistant.a_run(
+            recipient=planner,
+            message=f"""
+            Please work together to fulfill this user request:
+
+            User Request: {message}
+
+            Available MCP Tools:
+            {tool_detail}
+
+            Assistant: Please provide comprehensive content/answers that fulfill the user's request.
+            If they ask for explanations, provide detailed explanations.
+            If they need specific content, prepare that content.
+
+            Planner: Take the assistant's content and create a detailed technical execution plan
+            that includes the assistant's prepared content and uses the available tools.
+            """,
+            max_turns=4,
+        )
+        await assistant_plan.process()
+        result_messages = await assistant_plan.messages
+
+        # Step 2: Execute the plan with MCP agent
+        mcp_agent = AssistantAgent(
+            name="mcp_agent",
+            system_message="""
+            You are an MCP Tool Execution Agent.
+            You will receive a detailed execution plan from the planner that includes:
+            - The assistant's prepared content and answers
+            - A step-by-step technical execution plan using available MCP tools
+            Follow the execution plan carefully and use the appropriate tools to complete the task.
+            """,
+            llm_config=self.llm_config,
+        )
 
         toolkit = await create_toolkit(session=session)
         result = await mcp_agent.a_run(
-            # recipient=assistant,
-            message=message,
+            message=f"Original Message:\n{message}\n\nExecution Plan:\n{result_messages}",
             tools=toolkit.tools,
             max_turns=None,
             user_input=False,
@@ -89,146 +167,9 @@ class MCPAgent(Config):
         await result.process()
         return await result.messages
 
-    async def _create_toolkit_and_run_simple(
-        self, message: str, session: ClientSession
-    ) -> ChatResult:
-        # plan_agent = AssistantAgent(name="plan_agent", llm_config=self.llm_config)
-        mcp_agent = AssistantAgent(name="mcp_agent", llm_config=self.llm_config)
-
-        toolkit = await create_toolkit(session=session)
-        result = await mcp_agent.a_run(
-            # recipient=assistant,
-            message=message,
-            tools=toolkit.tools,
-            max_turns=10,
-            user_input=False,
-        )
-        await result.process()
-        return await result.messages
-
-    async def _create_toolkit_and_run(self, message: str, session: ClientSession) -> ChatResult:
-        user = UserProxyAgent(
-            name="User",
-            code_execution_config=False,
-            human_input_mode="NEVER",
-            is_termination_msg=lambda x: False,
-        )
-
-        tools_result = await session.list_tools()
-        tools = tools_result.tools
-
-        # 1. Planner Agent - Creates execution plans
-        planner_message = await get_planner_system_message(tools=tools)
-        planner = AssistantAgent(
-            name="planner",
-            system_message=planner_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-
-        # 2. Manager Agent - Reviews and approves plans
-        manager_message = await get_manager_system_message(tools=tools)
-        manager = AssistantAgent(
-            name="manager",
-            system_message=manager_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-
-        # 3. Code Agent - Handles software development tasks
-        code_agent_message = await get_code_agent_system_message()
-        code_agent = AssistantAgent(
-            name="code_agent",
-            system_message=code_agent_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-
-        # 4. Execution Agent - Handles code execution
-        execution_agent_message = await get_execution_agent_system_message()
-        execution_agent = AssistantAgent(
-            name="execution_agent",
-            system_message=execution_agent_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-
-        # 5. MCP Agent - Handles MCP tool operations
-        mcp_agent_message = await get_mcp_agent_system_message(tools=tools)
-        mcp_agent = AssistantAgent(
-            name="mcp_agent",
-            system_message=mcp_agent_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-
-        # User input goes to Planner first
-        register_hand_off(
-            agent=planner,
-            hand_to=[
-                OnCondition(target=manager, condition="Plan is complete and ready for review"),
-                AfterWork(AfterWorkOption.REVERT_TO_USER),
-            ],
-        )
-
-        # Manager assigns tasks directly to appropriate specialists
-        register_hand_off(
-            agent=manager,
-            hand_to=[
-                OnCondition(target=code_agent, condition="This task requires coding"),
-                OnCondition(target=mcp_agent, condition="This task requires tools"),
-                AfterWork(AfterWorkOption.REVERT_TO_USER),
-            ],
-        )
-
-        # Code Agent writes code and can hand off to Execution Agent for running it
-        register_hand_off(
-            agent=code_agent,
-            hand_to=[
-                OnCondition(target=execution_agent, condition="execute this code"),
-                OnCondition(target=mcp_agent, condition="need external tools"),
-                AfterWork(AfterWorkOption.REVERT_TO_USER),
-            ],
-        )
-
-        # Execution Agent runs code and can request tools from MCP Agent if needed
-        register_hand_off(
-            agent=execution_agent,
-            hand_to=[
-                OnCondition(target=mcp_agent, condition="need external tools"),
-                AfterWork(AfterWorkOption.REVERT_TO_USER),
-            ],
-        )
-
-        # MCP Agent handles all external tool operations (terminal execution point)
-        register_hand_off(agent=mcp_agent, hand_to=[AfterWork(AfterWorkOption.REVERT_TO_USER)])
-
-        # Register MCP toolkit ONLY with mcp_agent
-        toolkit = await create_toolkit(session=session)
-        toolkit.register_for_execution(mcp_agent)
-
-        # Create agent list for swarm chat (without router)
-        all_agents = [planner, manager, code_agent, execution_agent, mcp_agent]
-
-        # Start the workflow with planner
-        history = initiate_swarm_chat(
-            initial_agent=planner,
-            agents=all_agents,
-            user_agent=user,
-            messages=[{"role": "user", "content": message}],
-        )
-        return history
-
     async def a_run(self, message: str) -> ChatResult:
-        """Execute multi-agent swarm workflow with planner -> manager -> router -> (code/execution) agents"""
         async with self._session_context() as session:
             return await self._create_toolkit_and_run(message=message, session=session)
-
-    def list_tools(self) -> ListToolsResult:
-        return asyncio.run(self.a_list_tools())
-
-    def run(self, message: str) -> ChatResult:
-        return asyncio.run(self.a_run(message=message))
 
 
 if __name__ == "__main__":

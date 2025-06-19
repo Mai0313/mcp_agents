@@ -48,65 +48,52 @@ The system employs a **simplified three-stage workflow** with clear role separat
 
 #### **User Interaction Flow**
 
-User → Planner → Manager → (Code Agent OR MCP Agent)
+User → Assistant ↔ Planner → MCP Agent
 
-#### **Planner Agent**
+#### **Assistant Agent (Content Preparation Specialist)**
 
-- **Role**: Strategic planning and task analysis specialist
-- **Responsibilities**: Analyzes user requests and creates execution plans
-- **Input Information**: Basic team overview and available tool names
-- **Knowledge Base**:
-    - Code Agent: Handles programming and software development
-    - MCP Agent: Has access to external tools ({tool_names})
-- **Workflow Position**: First agent in the chain (receives user input)
-- **Output**: Strategic plan with recommended specialist assignment
-- **Termination Signal**: "Plan is complete and ready for review"
+- **Role**: Content preparation and comprehensive answer specialist
+- **Responsibilities**:
+    - Thoroughly understand user questions and requests
+    - Provide detailed answers or content that fulfills what the user is asking for
+    - When users ask for explanations (like "說明一下什麼是..."), provide comprehensive explanations
+    - Prepare any content, information, or answers needed for execution
+    - Focus on WHAT content/information needs to be provided, not just HOW to do it
+    - Work in user's language when appropriate
+- **Key Principle**: Provides actual content and answers, not just analysis
+- **Collaboration**: Works directly with Planner in multi-turn conversations
+- **Workflow Position**: First agent in collaborative pair
 
-#### **Manager Agent**
+#### **Planner Agent (Technical Execution Specialist)**
 
-- **Role**: Task assignment coordinator (simplified from previous review role)
-- **Responsibilities**: Directly assigns tasks to appropriate specialists
-- **Input Information**: Available tool names for assignment decisions
-- **Assignment Logic**:
-    - Programming/Development tasks → "This task requires coding"
-    - External tool operations → "This task requires tools"
-- **Workflow Position**: Second agent in the chain (receives plans from planner)
-- **Decision Authority**: Direct task assignment without complex review process
-
-#### **Code Agent (Development Specialist)**
-
-- **Role**: Software development and code creation specialist
-- **Expertise**: Code writing, technical design, software architecture
-- **Tools**: **NO direct tool access** - pure code creation focus
-- **Limitations**: Does NOT execute code or use external tools
-- **Handoff Capability**: Can delegate to Execution Agent ("execute this code") or MCP Agent ("need external tools")
-- **System Message**: Tool-agnostic, focused on code creation excellence
-
-#### **Execution Agent (Code Execution Specialist)**
-
-- **Role**: Code execution and testing specialist
-- **Expertise**: Running scripts, testing programs, file operations, system commands
-- **Tools**: **NO direct external tool access** - system/code execution only
-- **Limitations**: Does NOT use MCP tools
-- **Handoff Capability**: Can request MCP Agent assistance ("need external tools")
-- **System Message**: Tool-agnostic, focused on code execution excellence
+- **Role**: Technical execution planning specialist working with Assistant
+- **Responsibilities**:
+    - Take the assistant's comprehensive answers and content
+    - Incorporate the assistant's content into technical execution plans
+    - Map execution steps to available MCP tools
+    - Ensure assistant's prepared content is included in the final plan
+    - Create step-by-step technical instructions for MCP agent
+- **Key Principle**: Assistant provides WHAT content to use, Planner provides HOW to execute it technically
+- **Input Information**: Assistant's detailed content plus available tool descriptions
+- **Collaboration**: Engages in multi-turn conversation with Assistant
+- **Workflow Position**: Second agent in collaborative pair
 
 #### **MCP Agent (Tool Operation Specialist)**
 
 - **Role**: **EXCLUSIVE** external tool operation specialist
 - **Expertise**: Direct external tool execution, API operations, system integrations
 - **Tools**: **ONLY agent with MCP toolkit registration** - exclusive access to all external tools
+- **Input**: Comprehensive execution plan from Assistant-Planner collaboration
 - **Capabilities**: Complete independence for all external operations
 - **Terminal Role**: Final execution point - terminates after completing tool operations
-- **System Message**: Complete tool inventory with detailed descriptions
 
 ### Key Methods
 
 - `a_list_tools()`: Lists available MCP tools asynchronously
-- `a_run(message)`: Executes multi-agent swarm workflow using `_create_toolkit_and_run()`
+- `a_run(message)`: Executes three-agent collaborative workflow using `_create_toolkit_and_run()`
 - `run(message)`: Synchronous version of `a_run()`
 - `_session_context()`: Context manager for MCP session handling
-- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates simplified three-stage workflow: Planner → Manager → (Code Agent OR MCP Agent)
+- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates collaborative three-agent workflow: Assistant ↔ Planner → MCP Agent
 - `_create_toolkit_and_run_simple()`: Simplified single-agent execution for direct tool usage (legacy/testing)
 - `_create_toolkit_and_run_v1()`: Legacy method (currently not used)
 
@@ -116,12 +103,8 @@ The system features a **centralized prompt management** architecture in `src/pro
 
 - **Centralized Prompts**: All system messages are managed in `src/prompt.py` for consistency and maintainability
 - **Specialized Prompt Functions**: Five main functions for generating role-specific prompts:
-    - `get_planner_system_message(tools)`: Creates strategic planning prompts
-    - `get_manager_system_message(tools)`: Creates task assignment prompts (simplified from review)
-    - `get_code_agent_system_message()`: Creates software development prompts
-    - `get_execution_agent_system_message()`: Creates code execution prompts
-    - `get_mcp_agent_system_message(tools)`: Creates tool operation prompts
-    - `generate_dynamic_system_message(tools)`: Fallback for general tool-aware prompts
+    - `get_planner_message(tools)`: Creates strategic planning prompts
+    - `get_assistant_message(tools)`: Fallback for general tool-aware prompts
 - **Universal & Flexible**: Prompts are completely tool-agnostic and work with any MCP server configuration
 - **Architecture-Independent**: No hardcoded agent names or specific tool dependencies
 - **Clean Format**: Professional, focused prompts without unnecessary decorations
@@ -150,15 +133,17 @@ User Request → Planner → Manager → (Code Agent OR MCP Agent)
 
 #### **Handoff Conditions**
 
-**Planner → Manager**:
+**Assistant ↔ Planner Collaboration**:
 
-- Condition: "Plan is complete and ready for review"
-- Triggers: When planner completes strategic planning
+- Condition: Multi-turn conversation (up to 6 turns)
+- Purpose: Collaborative analysis and planning
+- Triggers: Automatic conversation flow between Assistant and Planner
 
-**Manager → Specialists**:
+**Planner → MCP Agent**:
 
-- "This task requires coding" → Code Agent
-- "This task requires tools" → MCP Agent
+- Condition: "Plan is complete and ready for execution"
+- Triggers: When collaborative planning is finished
+- Final execution by MCP Agent with available tools
 
 #### **Secondary Collaboration Flow**
 
@@ -179,10 +164,11 @@ Specialists can collaborate when needed:
 
 #### **Simplified Benefits**
 
-- **Reduced Complexity**: Removed Router agent for more direct task assignment
-- **Faster Decision Making**: Manager directly assigns tasks without complex review process
+- **Enhanced Collaboration**: Assistant and Planner work together to thoroughly understand user requirements
+- **Comprehensive Analysis**: Multi-turn conversation ensures detailed requirement analysis
+- **Tool-Aware Planning**: Plans are created with full knowledge of available MCP tools
+- **Efficient Execution**: MCP Agent receives well-analyzed and planned instructions
 - **Clear Separation**: Maintains specialist independence while enabling collaboration
-- **Efficient Routing**: Direct assignment based on task type analysis
 
 ### Supported Connection Types
 
@@ -273,12 +259,21 @@ The system uses a **multi-agent sequential workflow** for all tasks:
 
 ### 🌊 Multi-Agent Workflow (`a_run` / `run`)
 
-- **Six-agent sequential flow**: Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
-- **Plan-driven execution**: Tasks are first planned, reviewed, approved, then routed for execution
-- **Specialized tool access**: Only tool operation specialist has direct toolkit registration
-- **Cross-agent collaboration**: Development specialists can hand off to execution specialists for code execution or tool operation specialists for external operations
+- **Three-agent collaborative workflow**: Assistant ↔ Planner → MCP Agent
+- **Collaborative Analysis**: Assistant and Planner work together to understand and plan tasks
+- **Plan-driven execution**: Tasks are analyzed, planned through collaboration, then executed
+- **Specialized tool access**: Only MCP agent has direct toolkit registration
 - **Best for**: All types of tasks - from simple operations to complex multi-step workflows
-- **Implementation**: Uses `_create_toolkit_and_run()` with planner-based sequential workflow
+- **Implementation**: Uses `_create_toolkit_and_run()` with collaborative assistant-planner workflow
+
+#### **Enhanced Workflow Process**
+
+1. **Assistant Analysis**: Analyzes user requests and identifies requirements
+2. **Collaborative Planning**: Assistant and Planner engage in multi-turn conversation (up to 6 turns) to:
+    - Understand user requirements thoroughly
+    - Map requirements to available MCP tools
+    - Create comprehensive execution plans
+3. **MCP Execution**: MCP Agent executes the collaboratively created plan using available tools
 
 ### 🔧 Legacy Simple Mode (Available but not default)
 
@@ -358,32 +353,20 @@ The system supports multiple MCP servers with example configurations:
 
 ### Core Prompt Functions (`src/prompt.py`)
 
-- **`generate_dynamic_system_message(tools)`**: Creates adaptive system messages for general tool access
+- **`get_assistant_message(tools)`**: Creates adaptive system messages for general tool access
 
     - Generates comprehensive tool descriptions and capabilities overview
     - Returns system message with available tool information
     - Used as fallback for general-purpose tool operations
 
-- **`get_planner_system_message(tools)`**: Creates strategic planning prompts with capability overview
-
-- **`get_manager_system_message(tools)`**: Creates plan review and approval prompts
+- **`get_planner_message(tools)`**: Creates strategic planning prompts with capability overview
 
 - **`get_router_system_message(tools)`**: Creates task routing prompts with capability-aware routing
-
-- **`get_code_agent_system_message()`**: Creates development specialist prompts (tool-independent)
-
-- **`get_execution_agent_system_message()`**: Creates execution specialist prompts (tool-independent)
-
-- **`get_mcp_agent_system_message(tools)`**: Creates tool operation specialist prompts with detailed tool access
 
 ### Message Templates
 
 - **`_FALLBACK_MESSAGE`**: Used when no tools are available - generic specialist message
 - **`_PLANNER_MESSAGE`**: Template for strategic planning with capability awareness
-- **`_MANAGER_MESSAGE`**: Template for plan review and approval decisions
-- **`_ROUTER_MESSAGE`**: Template for intelligent task routing based on requirements
-- **`_CODE_AGENT_MESSAGE`**: Template for development specialists (tool-agnostic)
-- **`_EXECUTION_AGENT_MESSAGE`**: Template for execution specialists (tool-agnostic)
 - **`_MCP_AGENT_MESSAGE`**: Template for tool operation specialists with tool access
 
 ### Universal Design Principles
