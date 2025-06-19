@@ -65,9 +65,7 @@ class MCPAgent(Config):
             tool_detail = "No tools available or an error occurred while fetching tool details."
         return tool_detail
 
-    async def _create_simple_toolkit_and_run(
-        self, message: str, session: ClientSession
-    ) -> Message:
+    async def _create_simple_run(self, message: str, session: ClientSession) -> Message:
         # Ref: https://docs.ag2.ai/0.9.3/docs/user-guide/advanced-concepts/tools/mcp/client/
         # Create a toolkit with available MCP tools
         toolkit = await create_toolkit(session=session)
@@ -79,7 +77,7 @@ class MCPAgent(Config):
         await result.process()
         return await result.messages
 
-    async def _create_toolkit_and_run(self, message: str, session: ClientSession) -> Message:
+    async def _create_run(self, message: str, session: ClientSession) -> Message:
         assistant = AssistantAgent(
             name="assistant",
             system_message="""You are an Assistant Agent who provides comprehensive answers and content preparation for user requests.
@@ -191,7 +189,7 @@ class MCPAgent(Config):
 
     async def a_run(self, message: str) -> ChatResult:
         async with self._session_context() as session:
-            return await self._create_simple_toolkit_and_run(message=message, session=session)
+            return await self._create_simple_run(message=message, session=session)
 
 
 if __name__ == "__main__":

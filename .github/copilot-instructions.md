@@ -93,9 +93,9 @@ User → Assistant ↔ Planner → MCP Agent
 ### Key Methods
 
 - `get_tool_detail()`: Asynchronously lists available MCP tools with descriptions
-- `a_run(message)`: Executes two-stage collaborative workflow using `_create_toolkit_and_run()`
+- `a_run(message)`: Executes two-stage collaborative workflow using `_create_run()`
 - `_session_context()`: Context manager for MCP session handling with automatic initialization
-- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates collaborative two-agent workflow: Assistant ↔ Planner → MCP Agent
+- `_create_run()`: **MAIN ARCHITECTURE** - Creates collaborative two-agent workflow: Assistant ↔ Planner → MCP Agent
 - `_compiled_params`: Computed property that automatically compiles server parameters for both STDIO and SSE connections
 
 ### Prompt Management System
@@ -248,7 +248,7 @@ The system uses a **two-stage collaborative workflow** for all tasks:
 - **Plan-driven execution**: Tasks are analyzed, content prepared, planned through collaboration, then executed
 - **Specialized tool access**: Only MCP agent has direct toolkit registration
 - **Best for**: All types of tasks - from simple operations to complex multi-step workflows
-- **Implementation**: Uses `_create_toolkit_and_run()` with collaborative assistant-planner workflow
+- **Implementation**: Uses `_create_run()` with collaborative assistant-planner workflow
 
 #### **Enhanced Workflow Process**
 
