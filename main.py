@@ -1,5 +1,10 @@
 import os
 import asyncio
+
+import logfire
+
+logfire.configure(send_to_logfire=False)
+
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
@@ -68,12 +73,17 @@ class MCPAgent(Config):
 
     async def _create_simple_run(self, message: str, session: ClientSession) -> Message:
         # Ref: https://docs.ag2.ai/0.9.3/docs/user-guide/advanced-concepts/tools/mcp/client/
-        # Create a toolkit with available MCP tools
+        agent = AssistantAgent(
+            name="assistant",
+            system_message="""
+            REPLY `TERMINATE` if the request cannot be fulfilled or requires human intervention.
+            """,
+            llm_config=self.llm_config,
+            is_termination_msg=lambda x: "TERMINATE" in x.get("content"),
+        )
         toolkit = await create_toolkit(session=session)
-        agent = AssistantAgent(name="assistant", llm_config=self.llm_config)
-        # Make a request using the MCP tool
         result = await agent.a_run(
-            message=message, tools=toolkit.tools, max_turns=2, user_input=False
+            message=message, tools=toolkit.tools, max_turns=None, user_input=False
         )
         await result.process()
         return await result.messages
