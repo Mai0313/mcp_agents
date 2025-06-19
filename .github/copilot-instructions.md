@@ -75,25 +75,25 @@ The system employs a **complete sequential multi-agent workflow** with six speci
 
 - **Role**: Software development and technical implementation specialist
 - **Expertise**: Code writing, development workflows, technical implementation
-- **Tools**: **NO direct MCP access** - focuses on code creation and technical design
-- **Collaboration**: Can hand off to execution_agent for code execution or mcp_agent for tool operations
-- **System Message**: Uses code-specific system message from `get_code_agent_system_message()`
+- **Tools**: **NO direct tool access** - focuses on code creation and technical design
+- **Collaboration**: Can hand off to execution specialists for code execution or tool operation specialists for external operations
+- **System Message**: Uses development-specific system message from `get_code_agent_system_message()`
 
 #### **Execution Agent**
 
 - **Role**: Code execution and testing specialist
 - **Expertise**: Running code, executing scripts, testing programs, performance monitoring
-- **Tools**: **NO direct MCP access** - focuses on code execution and testing
-- **Responsibilities**: Executes code written by code_agent, runs tests, handles runtime debugging
+- **Tools**: **NO direct tool access** - focuses on code execution and testing
+- **Responsibilities**: Executes code written by development specialists, runs tests, handles runtime debugging
 - **System Message**: Uses execution-specific system message from `get_execution_agent_system_message()`
 
 #### **MCP Agent**
 
-- **Role**: **EXCLUSIVE** MCP tool execution specialist
-- **Expertise**: Direct MCP tool execution, API operations, external system interactions
-- **Tools**: **ONLY agent with MCP toolkit registration** - has exclusive access to all MCP tools
-- **Responsibilities**: Executes all MCP tool operations (Jira, Confluence, Git, etc.), data manipulation, external system interactions
-- **System Message**: Uses MCP-specific system message from `get_mcp_agent_system_message()`
+- **Role**: **EXCLUSIVE** tool operation specialist
+- **Expertise**: Direct tool execution, API operations, external system interactions
+- **Tools**: **ONLY agent with toolkit registration** - has exclusive access to all available tools
+- **Responsibilities**: Executes all tool operations, data manipulation, external system interactions
+- **System Message**: Uses tool operation-specific system message from `get_mcp_agent_system_message()`
 
 ### Key Methods
 
@@ -101,7 +101,7 @@ The system employs a **complete sequential multi-agent workflow** with six speci
 - `a_run(message)`: Executes multi-agent swarm workflow using `_create_toolkit_and_run()`
 - `run(message)`: Synchronous version of `a_run()`
 - `_session_context()`: Context manager for MCP session handling
-- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates six-agent sequential workflow: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates six-agent sequential workflow: Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
 - `_create_toolkit_and_run_simple()`: Simplified single-agent execution for direct tool usage (legacy/testing)
 - `_create_toolkit_and_run_v1()`: Legacy method (currently not used)
 
@@ -114,34 +114,36 @@ The system features a **centralized prompt management** architecture in `src/pro
     - `get_planner_system_message(tools)`: Creates strategic planning prompts
     - `get_manager_system_message(tools)`: Creates plan review and approval prompts
     - `get_router_system_message(tools)`: Creates task routing prompts
-    - `get_code_agent_system_message(tools)`: Creates software development prompts
-    - `get_execution_agent_system_message(tools)`: Creates code execution prompts
-    - `get_mcp_agent_system_message(tools)`: Creates MCP tool operation prompts
+    - `get_code_agent_system_message()`: Creates software development prompts
+    - `get_execution_agent_system_message()`: Creates code execution prompts
+    - `get_mcp_agent_system_message(tools)`: Creates tool operation prompts
     - `generate_dynamic_system_message(tools)`: Fallback for general tool-aware prompts
-- **Generic & Adaptable**: Prompts are tool-agnostic and work with any MCP server configuration
+- **Universal & Flexible**: Prompts are completely tool-agnostic and work with any MCP server configuration
+- **Architecture-Independent**: No hardcoded agent names or specific tool dependencies
 - **Clean Format**: Professional, focused prompts without unnecessary decorations
-- **Tool Categorization**: Automatically categorizes tools by prefix patterns for better organization
+- **Dynamic Adaptation**: Automatically adapts to available capabilities and tools
 
 ### Dynamic Tool Discovery
 
 The system features **dynamic tool discovery and system message generation**:
 
-- **Real-time Tool Analysis**: Uses `session.list_tools()` to discover available MCP tools at runtime
-- **Automatic Categorization**: Automatically categorizes tools by prefix patterns (jira\_, confluence\_, etc.)
+- **Real-time Tool Analysis**: Uses `session.list_tools()` to discover available tools at runtime
+- **Automatic Adaptation**: Automatically adapts to any MCP tool configuration
 - **Context-Aware Prompts**: Generates system messages based on actual tool availability
-- **Universal Compatibility**: Works with any MCP tool types, not just Jira/Confluence
-- **Adaptive Workflows**: Agents automatically adapt to different MCP server configurations
+- **Universal Compatibility**: Works with any MCP tool types and server configurations
+- **Flexible Workflows**: Agents automatically adapt to different tool ecosystems
+- **No Hardcoded Dependencies**: System works regardless of specific tool implementations
 
-This ensures that agents always have up-to-date information about available tools and can provide accurate guidance to users.
+This ensures that agents always have up-to-date information about available tools and can provide accurate guidance to users, regardless of the specific MCP server configuration.
 
 ### Hand-off Strategy
 
 The system implements intelligent agent hand-offs using AutoGen's swarm capabilities with **sequential workflow**:
 
-- **Sequential Planning Flow**: User → Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- **Sequential Planning Flow**: User → Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
 - **Plan-Driven Execution**: Tasks are first planned, reviewed, approved, then routed for execution
-- **Specialized Tool Access**: Only mcp_agent has direct MCP toolkit registration
-- **Cross-Agent Collaboration**: Code agents can hand off to execution agents for code execution or mcp_agent for tool operations
+- **Specialized Tool Access**: Only tool operation specialist has direct toolkit registration
+- **Cross-Agent Collaboration**: Development specialists can hand off to execution specialists for code execution or tool operation specialists for external operations
 - **Termination-based completion**: All agents use AfterWork(AfterWorkOption.TERMINATE) for clean task completion
 - **Intelligent Routing**: Router agent makes informed decisions based on task characteristics
 
@@ -234,10 +236,10 @@ The system uses a **multi-agent sequential workflow** for all tasks:
 
 ### 🌊 Multi-Agent Workflow (`a_run` / `run`)
 
-- **Six-agent sequential flow**: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+- **Six-agent sequential flow**: Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
 - **Plan-driven execution**: Tasks are first planned, reviewed, approved, then routed for execution
-- **Specialized tool access**: Only mcp_agent has direct MCP toolkit registration
-- **Cross-agent collaboration**: Code agents can hand off to execution agents for code execution or mcp_agent for tool operations
+- **Specialized tool access**: Only tool operation specialist has direct toolkit registration
+- **Cross-agent collaboration**: Development specialists can hand off to execution specialists for code execution or tool operation specialists for external operations
 - **Best for**: All types of tasks - from simple operations to complex multi-step workflows
 - **Implementation**: Uses `_create_toolkit_and_run()` with planner-based sequential workflow
 
@@ -263,7 +265,7 @@ The current implementation includes:
 ### Current Routing Logic
 
 ```python
-# Sequential workflow: Planner → Manager → Router → (Code Agent OR MCP Agent OR Execution Agent)
+# Sequential workflow: Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
 
 # Planner creates plan and hands to manager
 register_hand_off(
@@ -284,7 +286,7 @@ register_hand_off(
     ],
 )
 
-# Router determines execution path: Code Agent, MCP Agent, or Execution Agent
+# Router determines execution path: Development Specialist, Tool Operation Specialist, or Execution Specialist
 register_hand_off(
     agent=router_agent,
     hand_to=[
@@ -319,28 +321,40 @@ The system supports multiple MCP servers with example configurations:
 
 ### Core Prompt Functions (`src/prompt.py`)
 
-- **`generate_dynamic_system_message(tools)`**: Creates adaptive system messages for specialist agents
+- **`generate_dynamic_system_message(tools)`**: Creates adaptive system messages for general tool access
 
-    - Groups tools by category using prefix patterns
-    - Generates detailed tool descriptions (truncated to 120 characters)
-    - Returns comprehensive system message with tool categorization
+    - Generates comprehensive tool descriptions and capabilities overview
+    - Returns system message with available tool information
+    - Used as fallback for general-purpose tool operations
 
-- **`get_manager_system_message(tools)`**: Creates manager-specific routing instructions
+- **`get_planner_system_message(tools)`**: Creates strategic planning prompts with capability overview
 
-    - Extracts tool categories for routing decisions
-    - Focuses on task analysis and agent assignment
-    - Provides clear routing guidelines for documentation vs code tasks
+- **`get_manager_system_message(tools)`**: Creates plan review and approval prompts
+
+- **`get_router_system_message(tools)`**: Creates task routing prompts with capability-aware routing
+
+- **`get_code_agent_system_message()`**: Creates development specialist prompts (tool-independent)
+
+- **`get_execution_agent_system_message()`**: Creates execution specialist prompts (tool-independent)
+
+- **`get_mcp_agent_system_message(tools)`**: Creates tool operation specialist prompts with detailed tool access
 
 ### Message Templates
 
-- **`_FALLBACK_MESSAGE`**: Used when no tools are available
-- **`_MANAGER_MESSAGE`**: Template for manager agent with routing logic
-- **`_ASST_MESSAGE`**: Template for specialist agents with tool access
+- **`_FALLBACK_MESSAGE`**: Used when no tools are available - generic specialist message
+- **`_PLANNER_MESSAGE`**: Template for strategic planning with capability awareness
+- **`_MANAGER_MESSAGE`**: Template for plan review and approval decisions
+- **`_ROUTER_MESSAGE`**: Template for intelligent task routing based on requirements
+- **`_CODE_AGENT_MESSAGE`**: Template for development specialists (tool-agnostic)
+- **`_EXECUTION_AGENT_MESSAGE`**: Template for execution specialists (tool-agnostic)
+- **`_MCP_AGENT_MESSAGE`**: Template for tool operation specialists with tool access
 
-### Tool Categorization Logic
+### Universal Design Principles
 
-The system automatically categorizes tools by extracting prefixes from tool names:
+The prompt system is designed to be completely universal and adaptable:
 
-- Tools like `jira_create_ticket` → "Jira" category
-- Tools like `confluence_create_page` → "Confluence" category
-- Generic tools without prefixes → "General" category
+- **Tool-Agnostic**: No hardcoded references to specific tools (Jira, Confluence, etc.)
+- **Architecture-Independent**: No fixed agent names or specific workflow dependencies
+- **Capability-Driven**: Focuses on capabilities and specializations rather than specific implementations
+- **Dynamic Adaptation**: Automatically adapts to any available tool configuration
+- **Professional Tone**: Clean, focused prompts without unnecessary decorations or rigid formatting
