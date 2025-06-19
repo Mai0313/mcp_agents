@@ -1,6 +1,9 @@
+import dotenv
 from autogen import LLMConfig
 from pydantic import Field, AliasChoices, computed_field
 from pydantic_settings import BaseSettings
+
+dotenv.load_dotenv()
 
 
 class Config(BaseSettings):
