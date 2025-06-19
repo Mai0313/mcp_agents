@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from mcp import ClientSession, StdioServerParameters
-from autogen import LLMConfig, ChatResult, AssistantAgent, UserProxyAgent
+from autogen import ChatResult, AssistantAgent, UserProxyAgent
 from pydantic import BaseModel, ConfigDict, computed_field
 from mcp.types import ListToolsResult
 from autogen.mcp import create_toolkit
@@ -40,7 +40,6 @@ class SSEServerParameters(BaseModel):
 
 class MCPAgent(Config):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    model: str
     params: StdioServerParameters | SSEServerParameters | str
 
     @computed_field
@@ -51,29 +50,6 @@ class MCPAgent(Config):
         if isinstance(self.params, str):
             return SSEServerParameters(url=self.params)
         raise ValueError("Invalid parameters provided for MCPAgent.")
-
-    @computed_field
-    @property
-    def llm_config(self) -> LLMConfig:
-        if self.api_type == "azure":
-            llm_config = LLMConfig(
-                model=self.model,
-                api_key=self.api_key,
-                base_url=self.base_url,
-                api_version="2025-04-01-preview",
-                api_type=self.api_type,
-                default_headers={"X-User-Id": "srv_dvc_tma001"},
-            )
-        elif self.api_type == "openai":
-            llm_config = LLMConfig(
-                model=self.model,
-                api_key=self.api_key,
-                base_url=self.base_url,
-                api_type=self.api_type,
-            )
-        else:
-            raise ValueError(f"Unsupported API type: {self.api_type}")
-        return llm_config
 
     @asynccontextmanager
     async def _session_context(self) -> AsyncGenerator[ClientSession, None]:

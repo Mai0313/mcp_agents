@@ -1,8 +1,16 @@
-from pydantic import Field, AliasChoices
+from autogen import LLMConfig
+from pydantic import Field, AliasChoices, computed_field
 from pydantic_settings import BaseSettings
 
 
 class Config(BaseSettings):
+    model: str = Field(
+        ...,
+        description="The model to use for LLM requests.",
+        validation_alias=AliasChoices("MODEL", "model", "OPENAI_MODEL", "AZURE_OPENAI_MODEL"),
+        frozen=False,
+        deprecated=False,
+    )
     api_type: str = Field(
         default="openai",
         description="The type of API to use for LLM requests. Options: 'openai', 'azure', etc.",
@@ -28,3 +36,26 @@ class Config(BaseSettings):
         frozen=False,
         deprecated=False,
     )
+
+    @computed_field
+    @property
+    def llm_config(self) -> LLMConfig:
+        if self.api_type == "azure":
+            llm_config = LLMConfig(
+                model=self.model,
+                api_key=self.api_key,
+                base_url=self.base_url,
+                api_version="2025-04-01-preview",
+                api_type=self.api_type,
+                default_headers={"X-User-Id": "srv_dvc_tma001"},
+            )
+        elif self.api_type == "openai":
+            llm_config = LLMConfig(
+                model=self.model,
+                api_key=self.api_key,
+                base_url=self.base_url,
+                api_type=self.api_type,
+            )
+        else:
+            raise ValueError(f"Unsupported API type: {self.api_type}")
+        return llm_config
