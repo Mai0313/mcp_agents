@@ -170,7 +170,7 @@ class MCPAgent(Config):
             available_tools = "Available tools:\n"
             tools_result = await session.list_tools()
             for tool in tools_result.tools:
-                available_tools += f"- `{tool.name}`\n{tool.description}\n"
+                available_tools += f"- `{tool.name}`: {tool.description}\n"
             return available_tools
 
     async def a_run(self, message: str) -> ChatResult:
