@@ -165,6 +165,14 @@ class MCPAgent(Config):
         await result.process()
         return await result.messages
 
+    async def a_list_tools(self) -> str:
+        async with self._session_context() as session:
+            available_tools = "Available tools:\n"
+            tools_result = await session.list_tools()
+            for tool in tools_result.tools:
+                available_tools += f"- `{tool.name}`\n{tool.description}\n"
+            return available_tools
+
     async def a_run(self, message: str) -> ChatResult:
         async with self._session_context() as session:
             return await self._create_toolkit_and_run(message=message, session=session)

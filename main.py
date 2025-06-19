@@ -45,7 +45,7 @@ if __name__ == "__main__":
             "--host",
             "https://gitea.mediatek.inc",
             "--token",
-            "...",
+            f"{os.getenv('GITEA_TOKEN')}",
         ],
     )
     github_params = SSEServerParameters(
