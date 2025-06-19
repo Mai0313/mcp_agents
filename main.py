@@ -1,39 +1,33 @@
 import os
-from typing import Any
 import asyncio
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from mcp import ClientSession, StdioServerParameters
 from autogen import ChatResult, AssistantAgent
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import ConfigDict, computed_field
 from autogen.mcp import create_toolkit
 from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
 from autogen.io.run_response import Message
+from mcp.client.session_group import (
+    ServerParameters,
+    SseServerParameters,
+    StreamableHttpParameters,
+)
+from mcp.client.streamable_http import streamablehttp_client
 
 from src.types.config import Config
 
 
-class SSEServerParameters(BaseModel):
-    url: str
-    headers: dict[str, Any] = {}
-    timeout: int = 30
-    sse_read_timeout: int = 60
-
-
 class MCPAgent(Config):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    params: StdioServerParameters | SSEServerParameters | str
+    params: ServerParameters
 
     @computed_field
     @property
-    def _compiled_params(self) -> StdioServerParameters | SSEServerParameters:
-        if isinstance(self.params, (StdioServerParameters, SSEServerParameters)):
-            return self.params
-        if isinstance(self.params, str):
-            return SSEServerParameters(url=self.params)
-        raise ValueError("Invalid parameters provided for MCPAgent.")
+    def _compiled_params(self) -> ServerParameters:
+        return self.params
 
     @asynccontextmanager
     async def _session_context(self) -> AsyncGenerator[ClientSession, None]:
@@ -44,9 +38,16 @@ class MCPAgent(Config):
             ):
                 await session.initialize()
                 yield session
-        elif isinstance(self._compiled_params, SSEServerParameters):
+        elif isinstance(self._compiled_params, SseServerParameters):
             async with (
                 sse_client(**self._compiled_params.model_dump()) as streams,
+                ClientSession(*streams) as session,
+            ):
+                await session.initialize()
+                yield session
+        elif isinstance(self._compiled_params, StreamableHttpParameters):
+            async with (
+                streamablehttp_client(**self._compiled_params.model_dump()) as streams,
                 ClientSession(*streams) as session,
             ):
                 await session.initialize()
@@ -54,7 +55,7 @@ class MCPAgent(Config):
         else:
             raise ValueError("Invalid parameters provided for MCPAgent.")
 
-    async def get_tool_detail(self) -> str:
+    async def a_get_tool_detail(self) -> str:
         try:
             async with self._session_context() as session:
                 tools_result = await session.list_tools()
@@ -131,7 +132,7 @@ class MCPAgent(Config):
         )
 
         # Get available tools information
-        tool_detail = await self.get_tool_detail()
+        tool_detail = await self.a_get_tool_detail()
 
         # Step 1: Assistant analyzes the user's request
         assistant_plan = await assistant.a_run(
@@ -178,14 +179,6 @@ class MCPAgent(Config):
         )
         await result.process()
         return await result.messages
-
-    async def a_list_tools(self) -> str:
-        async with self._session_context() as session:
-            available_tools = "Available tools:\n"
-            tools_result = await session.list_tools()
-            for tool in tools_result.tools:
-                available_tools += f"- `{tool.name}`: {tool.description}\n"
-            return available_tools
 
     async def a_run(self, message: str) -> ChatResult:
         async with self._session_context() as session:
@@ -235,14 +228,14 @@ if __name__ == "__main__":
             f"{os.getenv('GITEA_TOKEN')}",
         ],
     )
-    github_params = SSEServerParameters(
+    github_params = SseServerParameters(
         url="https://api.githubcopilot.com/mcp",
         headers={"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"},
     )
     playwright_params = StdioServerParameters(command="npx", args=["-y", "@playwright/mcp@latest"])
 
     mcp_agent = MCPAgent(model="aide-gpt-4o", params=jira_params)
-    # tools = asyncio.run(mcp_agent.a_list_tools())
+    # tools = asyncio.run(mcp_agent.a_get_tool_detail())
     # print(tools)
 
     # Use the multi-agent workflow
