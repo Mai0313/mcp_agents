@@ -72,9 +72,6 @@ class MCPAgent(Config):
         # Create a toolkit with available MCP tools
         toolkit = await create_toolkit(session=session)
         agent = AssistantAgent(name="assistant", llm_config=self.llm_config)
-        # Register MCP tools with the agent
-        toolkit.register_for_llm(agent)
-
         # Make a request using the MCP tool
         result = await agent.a_run(
             message=message, tools=toolkit.tools, max_turns=2, user_input=False
@@ -246,7 +243,7 @@ if __name__ == "__main__":
     )
     playwright_params = StdioServerParameters(command="npx", args=["-y", "@playwright/mcp@latest"])
 
-    mcp_agent = MCPAgent(model="aide-gpt-4o", params=gitea_params)
+    mcp_agent = MCPAgent(model="aide-gpt-4o", params=jira_params)
     # tools = asyncio.run(mcp_agent.a_list_tools())
     # print(tools)
 
