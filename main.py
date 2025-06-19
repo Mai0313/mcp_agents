@@ -22,7 +22,6 @@ from autogen.agentchat.contrib.swarm_agent import (
 
 from src.config import Config
 from src.prompt import (
-    get_router_system_message,
     get_manager_system_message,
     get_planner_system_message,
     get_mcp_agent_system_message,
@@ -108,7 +107,12 @@ class MCPAgent(Config):
         return await result.messages
 
     async def _create_toolkit_and_run(self, message: str, session: ClientSession) -> ChatResult:
-        user = UserProxyAgent(name="User", code_execution_config=False)
+        user = UserProxyAgent(
+            name="User",
+            code_execution_config=False,
+            human_input_mode="NEVER",
+            is_termination_msg=lambda x: False,
+        )
 
         tools_result = await session.list_tools()
         tools = tools_result.tools
@@ -131,16 +135,7 @@ class MCPAgent(Config):
             human_input_mode="NEVER",
         )
 
-        # 3. Router Agent - Routes approved plans to appropriate agents
-        router_message = await get_router_system_message(tools=tools)
-        router_agent = AssistantAgent(
-            name="router_agent",
-            system_message=router_message,
-            llm_config=self.llm_config,
-            human_input_mode="NEVER",
-        )
-
-        # 4. Code Agent - Handles software development tasks
+        # 3. Code Agent - Handles software development tasks
         code_agent_message = await get_code_agent_system_message()
         code_agent = AssistantAgent(
             name="code_agent",
@@ -149,7 +144,7 @@ class MCPAgent(Config):
             human_input_mode="NEVER",
         )
 
-        # 5. Execution Agent - Handles code execution
+        # 4. Execution Agent - Handles code execution
         execution_agent_message = await get_execution_agent_system_message()
         execution_agent = AssistantAgent(
             name="execution_agent",
@@ -158,7 +153,7 @@ class MCPAgent(Config):
             human_input_mode="NEVER",
         )
 
-        # 6. MCP Agent - Handles MCP tool operations
+        # 5. MCP Agent - Handles MCP tool operations
         mcp_agent_message = await get_mcp_agent_system_message(tools=tools)
         mcp_agent = AssistantAgent(
             name="mcp_agent",
@@ -167,66 +162,53 @@ class MCPAgent(Config):
             human_input_mode="NEVER",
         )
 
-        # Complete Multi-Agent Workflow: Planner → Manager → Router → (Code/MCP/Execution Agent)
-
-        # Planner creates plan and hands to manager
+        # User input goes to Planner first
         register_hand_off(
             agent=planner,
             hand_to=[
                 OnCondition(target=manager, condition="Plan is complete and ready for review"),
-                AfterWork(agent=AfterWorkOption.TERMINATE),
+                AfterWork(AfterWorkOption.REVERT_TO_USER),
             ],
         )
 
-        # Manager reviews plan and routes to router if approved
+        # Manager assigns tasks directly to appropriate specialists
         register_hand_off(
             agent=manager,
             hand_to=[
-                OnCondition(target=router_agent, condition="The plan is approved"),
-                OnCondition(target=planner, condition="The plan needs revision"),
-                AfterWork(agent=AfterWorkOption.TERMINATE),
-            ],
-        )
-
-        # Router determines execution path: Code Agent, MCP Agent, or Execution Agent
-        register_hand_off(
-            agent=router_agent,
-            hand_to=[
                 OnCondition(target=code_agent, condition="This task requires coding"),
                 OnCondition(target=mcp_agent, condition="This task requires tools"),
-                OnCondition(target=execution_agent, condition="This task requires execution"),
-                AfterWork(agent=AfterWorkOption.TERMINATE),
+                AfterWork(AfterWorkOption.REVERT_TO_USER),
             ],
         )
 
-        # Code Agent can collaborate with other agents when needed
+        # Code Agent writes code and can hand off to Execution Agent for running it
         register_hand_off(
             agent=code_agent,
             hand_to=[
-                OnCondition(target=execution_agent, condition="execute code"),
-                OnCondition(target=mcp_agent, condition="use tools"),
-                AfterWork(agent=AfterWorkOption.TERMINATE),
+                OnCondition(target=execution_agent, condition="execute this code"),
+                OnCondition(target=mcp_agent, condition="need external tools"),
+                AfterWork(AfterWorkOption.REVERT_TO_USER),
             ],
         )
 
-        # Execution Agent can request tool operations from MCP agent
+        # Execution Agent runs code and can request tools from MCP Agent if needed
         register_hand_off(
             agent=execution_agent,
             hand_to=[
-                OnCondition(target=mcp_agent, condition="need tools"),
-                AfterWork(agent=AfterWorkOption.TERMINATE),
+                OnCondition(target=mcp_agent, condition="need external tools"),
+                AfterWork(AfterWorkOption.REVERT_TO_USER),
             ],
         )
 
-        # MCP Agent handles all tool operations (final execution)
-        register_hand_off(agent=mcp_agent, hand_to=[AfterWork(agent=AfterWorkOption.TERMINATE)])
+        # MCP Agent handles all external tool operations (terminal execution point)
+        register_hand_off(agent=mcp_agent, hand_to=[AfterWork(AfterWorkOption.REVERT_TO_USER)])
 
         # Register MCP toolkit ONLY with mcp_agent
         toolkit = await create_toolkit(session=session)
         toolkit.register_for_execution(mcp_agent)
 
-        # Create complete agent list for swarm chat
-        all_agents = [planner, manager, router_agent, code_agent, execution_agent, mcp_agent]
+        # Create agent list for swarm chat (without router)
+        all_agents = [planner, manager, code_agent, execution_agent, mcp_agent]
 
         # Start the workflow with planner
         history = initiate_swarm_chat(

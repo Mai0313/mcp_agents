@@ -212,6 +212,34 @@ The system supports multiple MCP servers:
 - **Cross-Agent Collaboration**: Agents can hand off tasks to each other based on specialization
 - **Best For**: All types of tasks - from simple operations to complex multi-step workflows
 
+## 🔄 **Enhanced Handoff Flow (Latest)**
+
+The system now implements an optimized multi-agent handoff flow based on AG2 swarm orchestration patterns:
+
+#### **Sequential Workflow**
+
+```
+User → Planner → Manager → Router → (Code/MCP/Execution Agent)
+```
+
+#### **Agent Specialization**
+
+- **Planner**: Gets team overview and tool names for strategic planning
+- **Manager**: Gets detailed tool information for feasibility assessment
+- **Router**: Routes tasks based on primary requirements
+- **Code Agent**: Tool-agnostic development specialist (writes code only)
+- **Execution Agent**: Code execution specialist (runs code only)
+- **MCP Agent**: Exclusive external tool operations specialist
+
+#### **Key Improvements**
+
+- ✅ **Information Layering**: Each agent gets appropriate level of detail
+- ✅ **Clear Separation**: Code creation vs. execution vs. tool operations
+- ✅ **Optimized Routing**: Router makes informed decisions based on task type
+- ✅ **AG2 Compliance**: Follows AG2 swarm handoff patterns and best practices
+
+**Demo**: Run `python demo_handoff.py` to see the improved flow in action.
+
 ## 🏗️ Architecture
 
 ### MCPAgent Class

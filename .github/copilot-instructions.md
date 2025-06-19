@@ -44,56 +44,61 @@ The project focuses on practical MCP agent implementation with support for multi
 
 ### Specialized Agent Architecture
 
-The system employs a **complete sequential multi-agent workflow** with six specialized roles:
+The system employs a **simplified three-stage workflow** with clear role separation:
+
+#### **User Interaction Flow**
+
+User → Planner → Manager → (Code Agent OR MCP Agent)
 
 #### **Planner Agent**
 
-- **Role**: Strategic planning and task decomposition specialist
-- **Responsibilities**: Analyzes user requests and creates detailed execution plans with step-by-step instructions
+- **Role**: Strategic planning and task analysis specialist
+- **Responsibilities**: Analyzes user requests and creates execution plans
+- **Input Information**: Basic team overview and available tool names
+- **Knowledge Base**:
+    - Code Agent: Handles programming and software development
+    - MCP Agent: Has access to external tools ({tool_names})
 - **Workflow Position**: First agent in the chain (receives user input)
-- **Output**: Comprehensive execution plan with objectives, steps, resources, expected outcomes, and considerations
-- **System Message**: Uses planner-specific system message from `get_planner_system_message()`
-- **Termination**: Ends with "Plan is complete and ready for review"
+- **Output**: Strategic plan with recommended specialist assignment
+- **Termination Signal**: "Plan is complete and ready for review"
 
 #### **Manager Agent**
 
-- **Role**: Plan review and approval coordinator
-- **Responsibilities**: Reviews planner's execution plans and makes approval decisions
-- **Workflow Position**: Second agent in the chain (reviews planner output)
-- **Decision Logic**: Approves good plans ("The plan is approved"), requests revisions ("The plan needs revision"), or rejects unfeasible requests
-- **System Message**: Uses manager-specific system message from `get_manager_system_message()`
+- **Role**: Task assignment coordinator (simplified from previous review role)
+- **Responsibilities**: Directly assigns tasks to appropriate specialists
+- **Input Information**: Available tool names for assignment decisions
+- **Assignment Logic**:
+    - Programming/Development tasks → "This task requires coding"
+    - External tool operations → "This task requires tools"
+- **Workflow Position**: Second agent in the chain (receives plans from planner)
+- **Decision Authority**: Direct task assignment without complex review process
 
-#### **Router Agent**
+#### **Code Agent (Development Specialist)**
 
-- **Role**: Execution path determination specialist
-- **Responsibilities**: Routes approved plans to appropriate execution agents based on task characteristics
-- **Workflow Position**: Third agent in the chain (routes approved plans)
-- **Routing Logic**: Routes to code_agent ("This task requires coding"), mcp_agent ("This task requires tools"), or execution_agent ("This task requires execution")
-- **System Message**: Uses router-specific system message from `get_router_system_message()`
+- **Role**: Software development and code creation specialist
+- **Expertise**: Code writing, technical design, software architecture
+- **Tools**: **NO direct tool access** - pure code creation focus
+- **Limitations**: Does NOT execute code or use external tools
+- **Handoff Capability**: Can delegate to Execution Agent ("execute this code") or MCP Agent ("need external tools")
+- **System Message**: Tool-agnostic, focused on code creation excellence
 
-#### **Code Agent**
-
-- **Role**: Software development and technical implementation specialist
-- **Expertise**: Code writing, development workflows, technical implementation
-- **Tools**: **NO direct tool access** - focuses on code creation and technical design
-- **Collaboration**: Can hand off to execution specialists for code execution or tool operation specialists for external operations
-- **System Message**: Uses development-specific system message from `get_code_agent_system_message()`
-
-#### **Execution Agent**
+#### **Execution Agent (Code Execution Specialist)**
 
 - **Role**: Code execution and testing specialist
-- **Expertise**: Running code, executing scripts, testing programs, performance monitoring
-- **Tools**: **NO direct tool access** - focuses on code execution and testing
-- **Responsibilities**: Executes code written by development specialists, runs tests, handles runtime debugging
-- **System Message**: Uses execution-specific system message from `get_execution_agent_system_message()`
+- **Expertise**: Running scripts, testing programs, file operations, system commands
+- **Tools**: **NO direct external tool access** - system/code execution only
+- **Limitations**: Does NOT use MCP tools
+- **Handoff Capability**: Can request MCP Agent assistance ("need external tools")
+- **System Message**: Tool-agnostic, focused on code execution excellence
 
-#### **MCP Agent**
+#### **MCP Agent (Tool Operation Specialist)**
 
-- **Role**: **EXCLUSIVE** tool operation specialist
-- **Expertise**: Direct tool execution, API operations, external system interactions
-- **Tools**: **ONLY agent with toolkit registration** - has exclusive access to all available tools
-- **Responsibilities**: Executes all tool operations, data manipulation, external system interactions
-- **System Message**: Uses tool operation-specific system message from `get_mcp_agent_system_message()`
+- **Role**: **EXCLUSIVE** external tool operation specialist
+- **Expertise**: Direct external tool execution, API operations, system integrations
+- **Tools**: **ONLY agent with MCP toolkit registration** - exclusive access to all external tools
+- **Capabilities**: Complete independence for all external operations
+- **Terminal Role**: Final execution point - terminates after completing tool operations
+- **System Message**: Complete tool inventory with detailed descriptions
 
 ### Key Methods
 
@@ -101,7 +106,7 @@ The system employs a **complete sequential multi-agent workflow** with six speci
 - `a_run(message)`: Executes multi-agent swarm workflow using `_create_toolkit_and_run()`
 - `run(message)`: Synchronous version of `a_run()`
 - `_session_context()`: Context manager for MCP session handling
-- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates six-agent sequential workflow: Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
+- `_create_toolkit_and_run()`: **MAIN ARCHITECTURE** - Creates simplified three-stage workflow: Planner → Manager → (Code Agent OR MCP Agent)
 - `_create_toolkit_and_run_simple()`: Simplified single-agent execution for direct tool usage (legacy/testing)
 - `_create_toolkit_and_run_v1()`: Legacy method (currently not used)
 
@@ -110,10 +115,9 @@ The system employs a **complete sequential multi-agent workflow** with six speci
 The system features a **centralized prompt management** architecture in `src/prompt.py`:
 
 - **Centralized Prompts**: All system messages are managed in `src/prompt.py` for consistency and maintainability
-- **Specialized Prompt Functions**: Seven main functions for generating role-specific prompts:
+- **Specialized Prompt Functions**: Five main functions for generating role-specific prompts:
     - `get_planner_system_message(tools)`: Creates strategic planning prompts
-    - `get_manager_system_message(tools)`: Creates plan review and approval prompts
-    - `get_router_system_message(tools)`: Creates task routing prompts
+    - `get_manager_system_message(tools)`: Creates task assignment prompts (simplified from review)
     - `get_code_agent_system_message()`: Creates software development prompts
     - `get_execution_agent_system_message()`: Creates code execution prompts
     - `get_mcp_agent_system_message(tools)`: Creates tool operation prompts
@@ -138,14 +142,47 @@ This ensures that agents always have up-to-date information about available tool
 
 ### Hand-off Strategy
 
-The system implements intelligent agent hand-offs using AutoGen's swarm capabilities with **sequential workflow**:
+The system implements intelligent agent hand-offs using AutoGen's swarm capabilities with **simplified three-stage workflow**:
 
-- **Sequential Planning Flow**: User → Planner → Manager → Router → (Development Specialist OR Tool Operation Specialist OR Execution Specialist)
-- **Plan-Driven Execution**: Tasks are first planned, reviewed, approved, then routed for execution
-- **Specialized Tool Access**: Only tool operation specialist has direct toolkit registration
-- **Cross-Agent Collaboration**: Development specialists can hand off to execution specialists for code execution or tool operation specialists for external operations
-- **Termination-based completion**: All agents use AfterWork(AfterWorkOption.TERMINATE) for clean task completion
-- **Intelligent Routing**: Router agent makes informed decisions based on task characteristics
+#### **Primary Workflow**
+
+User Request → Planner → Manager → (Code Agent OR MCP Agent)
+
+#### **Handoff Conditions**
+
+**Planner → Manager**:
+
+- Condition: "Plan is complete and ready for review"
+- Triggers: When planner completes strategic planning
+
+**Manager → Specialists**:
+
+- "This task requires coding" → Code Agent
+- "This task requires tools" → MCP Agent
+
+#### **Secondary Collaboration Flow**
+
+Specialists can collaborate when needed:
+
+**Code Agent Handoffs**:
+
+- "execute this code" → Execution Agent
+- "need external tools" → MCP Agent
+
+**Execution Agent Handoffs**:
+
+- "need external tools" → MCP Agent
+
+**MCP Agent**:
+
+- Terminal execution point (no further handoffs)
+
+#### **Simplified Benefits**
+
+- **Reduced Complexity**: Removed Router agent for more direct task assignment
+- **Faster Decision Making**: Manager directly assigns tasks without complex review process
+- **Clear Separation**: Maintains specialist independence while enabling collaboration
+- **Efficient Routing**: Direct assignment based on task type analysis
 
 ### Supported Connection Types
 
