@@ -161,7 +161,7 @@ class MCPAgent(Config):
         result = await mcp_agent.a_run(
             message=f"Original Message:\n{message}\n\nExecution Plan:\n{result_messages}",
             tools=toolkit.tools,
-            max_turns=None,
+            max_turns=2,
             user_input=False,
         )
         await result.process()
@@ -173,16 +173,16 @@ class MCPAgent(Config):
 
 
 if __name__ == "__main__":
-    # message = """
-    # 幫我看一下 01. Register and Usage (GAI Service API Repository) 裡面有哪一些端口可以使用
-    # """
-
     message = """
-    請幫我在 https://wiki.mediatek.inc/pages/viewpage.action?pageId=1516686162 這個頁面新增內容
-    這個頁面是 confluence 頁面
-    說明一下什麼是 Model Context Protocol (MCP)
-    並且註明 此文章為 AI 產生，僅供參考
+    幫我看一下 01. Register and Usage (GAI Service API Repository) 裡面有哪一些端口可以使用
     """
+
+    # message = """
+    # 請幫我在 https://wiki.mediatek.inc/pages/viewpage.action?pageId=1516686162 這個頁面新增內容
+    # 這個頁面是 confluence 頁面
+    # 說明一下什麼是 Model Context Protocol (MCP)
+    # 並且註明 此文章為 AI 產生，僅供參考
+    # """
 
     # message = """幫我查看一下我現在有哪一些repository"""
 
