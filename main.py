@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from mcp import ClientSession, StdioServerParameters
-from autogen import ChatResult, AssistantAgent
+from autogen import ChatResult, AssistantAgent, ConversableAgent
 from pydantic import ConfigDict, computed_field
 from autogen.mcp import create_toolkit
 from mcp.client.sse import sse_client
@@ -73,17 +73,27 @@ class MCPAgent(Config):
 
     async def _create_simple_run(self, message: str, session: ClientSession) -> Message:
         # Ref: https://docs.ag2.ai/0.9.3/docs/user-guide/advanced-concepts/tools/mcp/client/
+        user = ConversableAgent(
+            name="user",
+            system_message="REPLY `TERMINATE` if the task is done.",
+            llm_config=self.llm_config,
+            is_termination_msg=lambda x: "TERMINATE" in (x.get("content") or "") if x else False,
+        )
         agent = AssistantAgent(
             name="assistant",
-            system_message="""
-            REPLY `TERMINATE` if the request cannot be fulfilled or requires human intervention.
-            """,
+            system_message="REPLY `TERMINATE` if the task is done.",
             llm_config=self.llm_config,
-            is_termination_msg=lambda x: "TERMINATE" in x.get("content"),
+            is_termination_msg=lambda x: "TERMINATE" in (x.get("content") or "") if x else False,
         )
         toolkit = await create_toolkit(session=session)
-        result = await agent.a_run(
-            message=message, tools=toolkit.tools, max_turns=None, user_input=False
+        for tool in toolkit.tools:
+            tool.register_for_execution(user)
+            tool.register_for_llm(user)
+            tool.register_for_execution(agent)
+            tool.register_for_llm(agent)
+
+        result = await user.a_run(
+            recipient=agent, message=message, tools=toolkit.tools, max_turns=None, user_input=False
         )
         await result.process()
         return await result.messages
@@ -111,7 +121,7 @@ class MCPAgent(Config):
             """,
             llm_config=self.llm_config,
             human_input_mode="NEVER",
-            is_termination_msg=lambda x: "TERMINATE" in x.get("content"),
+            is_termination_msg=lambda x: "TERMINATE" in (x.get("content") or "") if x else False,
         )
 
         planner = AssistantAgent(
@@ -138,7 +148,7 @@ class MCPAgent(Config):
             """,
             llm_config=self.llm_config,
             human_input_mode="NEVER",
-            is_termination_msg=lambda x: "TERMINATE" in x.get("content"),
+            is_termination_msg=lambda x: "TERMINATE" in (x.get("content") or "") if x else False,
         )
 
         # Get available tools information
